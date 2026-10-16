@@ -811,11 +811,11 @@ interface AiEmojiFollowUp { automationId: string; contentIds: Set<string> }
  * title yet, and remember each answer ('' = no emoji) on the clip. Returns how
  * many clips were judged. Throws a user-facing message if OpenRouter fails.
  */
-async function decideAiEmojis(automationId: string, include: (item: AutomationContent) => boolean): Promise<number> {
+async function decideAiEmojis(automationId: string, include: (item: AutomationContent) => boolean, includeApproved = false): Promise<number> {
   const { automation } = find(automationId)
   const template = automation.textTemplate
   if (!template || template.emojiPlacement !== 'ai') return 0
-  const pending = automation.content.filter((item) => canReorderContent(item) && !item.metadataDraft && !item.tiktokApproval &&
+  const pending = automation.content.filter((item) => canReorderContent(item) && !item.metadataDraft && (includeApproved || !item.tiktokApproval) &&
     include(item) && item.aiEmojiFor !== (item.templateBase ?? item.title))
   if (!pending.length) return 0
   const picks = await pickTrendEmojis(pending.map((item) => ({ id: item.id, title: item.templateBase ?? item.title, transcript: item.transcript })), template.emojis)
@@ -868,7 +868,10 @@ export function setAutomationTextTemplate(id: unknown, raw: unknown): Automation
  * Clips already submitted, posting, holding a draft, or approved for TikTok
  * (their approved caption is what TikTok gets) are left as they are.
  */
-export async function applyAutomationTextTemplate(id: unknown, contentIds: unknown): Promise<{ automations: Automation[]; applied: number; skipped: number }> {
+export async function applyAutomationTextTemplate(id: unknown, contentIds: unknown, rawIncludeApproved: unknown = false): Promise<{ automations: Automation[]; applied: number; skipped: number; reapprove: number }> {
+  // Fork: opt-in. Clips approved for TikTok get the new text and lose that
+  // approval, so they wait for the user to review them again before posting.
+  const includeApproved = rawIncludeApproved === true
   const first = find(id)
   if (busy.has(first.automation.id)) throw new Error('Wait for the current operation to finish.')
   if (!first.automation.textTemplate) throw new Error('Save a text template first.')
@@ -876,7 +879,7 @@ export async function applyAutomationTextTemplate(id: unknown, contentIds: unkno
   const wanted = contentIds === null ? null : new Set(contentIds as string[])
   // Fork: 'AI picks' asks the model once for the clips it has not judged yet.
   if (first.automation.textTemplate.emojiPlacement === 'ai') {
-    await decideAiEmojis(first.automation.id, (item) => !wanted || wanted.has(item.id))
+    await decideAiEmojis(first.automation.id, (item) => !wanted || wanted.has(item.id), includeApproved)
   }
   const { workspace, automation } = find(id)
   if (busy.has(automation.id)) throw new Error('Wait for the current operation to finish.')
@@ -885,17 +888,25 @@ export async function applyAutomationTextTemplate(id: unknown, contentIds: unkno
   const previous = automation.content.map((item) => ({ ...item }))
   let applied = 0
   let skipped = 0
+  let reapprove = 0
   let n = 0
   for (const item of automation.content) {
     const queued = canReorderContent(item)
     if (queued) n++
     if (wanted && !wanted.has(item.id)) continue
-    if (!queued || item.metadataDraft || item.tiktokApproval) { if (wanted || queued) skipped++; continue }
+    if (!queued || item.metadataDraft || (item.tiktokApproval && !includeApproved)) { if (wanted || queued) skipped++; continue }
     templateItem(template, item, n)
+    if (item.tiktokApproval) {
+      // The TikTok review dialog starts from the clip's new caption.
+      item.tiktokApproval = null
+      item.tiktokDraftCaption = null
+      reviews.delete(item.id)
+      reapprove++
+    }
     applied++
   }
   try { save(workspace) } catch (error) { automation.content = previous; throw error }
-  return { automations: listAutomations(), applied, skipped }
+  return { automations: listAutomations(), applied, skipped, reapprove }
 }
 
 export function updateAutomationContent(id: unknown, contentId: unknown, raw: unknown): Automation[] {

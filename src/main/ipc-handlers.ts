@@ -120,7 +120,7 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
   handle('automations:setQueueOrder', (_event, id: unknown, orderedIds: unknown) => setAutomationQueueOrder(id, orderedIds))
   handle('automations:sortByTimeline', (_event, id: unknown) => sortAutomationQueueByTimeline(id))
   handle('automations:setTextTemplate', (_event, id: unknown, template: unknown) => setAutomationTextTemplate(id, template))
-  handle('automations:applyTextTemplate', (_event, id: unknown, contentIds: unknown) => applyAutomationTextTemplate(id, contentIds))
+  handle('automations:applyTextTemplate', (_event, id: unknown, contentIds: unknown, includeApproved: unknown) => applyAutomationTextTemplate(id, contentIds, includeApproved))
   handle('automations:addSounds', async (_event, id: unknown) => {
     const window = getMainWindow()
     if (!window) return listAutomations()

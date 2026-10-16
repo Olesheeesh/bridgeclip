@@ -144,7 +144,7 @@ export interface BridgeClipAPI {
     setQueueOrder: (id: string, orderedIds: string[]) => Promise<Automation[]>
     sortByTimeline: (id: string) => Promise<{ automations: Automation[]; placed: number; unknown: number }>
     setTextTemplate: (id: string, template: TextTemplate | null) => Promise<Automation[]>
-    applyTextTemplate: (id: string, contentIds: string[] | null) => Promise<{ automations: Automation[]; applied: number; skipped: number }>
+    applyTextTemplate: (id: string, contentIds: string[] | null, includeApproved?: boolean) => Promise<{ automations: Automation[]; applied: number; skipped: number; reapprove: number }>
     addSounds: (id: string) => Promise<Automation[]>
     updateSounds: (id: string, value: { sounds: AutomationSound[]; settings: AutomationSoundSettings }) => Promise<Automation[]>
     removeSound: (id: string, soundId: string) => Promise<Automation[]>
@@ -350,7 +350,7 @@ const api: BridgeClipAPI = {
     setQueueOrder: (id, orderedIds) => ipcRenderer.invoke('automations:setQueueOrder', id, orderedIds),
     sortByTimeline: (id) => ipcRenderer.invoke('automations:sortByTimeline', id),
     setTextTemplate: (id, template) => ipcRenderer.invoke('automations:setTextTemplate', id, template),
-    applyTextTemplate: (id, contentIds) => ipcRenderer.invoke('automations:applyTextTemplate', id, contentIds),
+    applyTextTemplate: (id, contentIds, includeApproved) => ipcRenderer.invoke('automations:applyTextTemplate', id, contentIds, includeApproved === true),
     addSounds: (id) => ipcRenderer.invoke('automations:addSounds', id),
     updateSounds: (id, value) => ipcRenderer.invoke('automations:updateSounds', id, value),
     removeSound: (id, soundId) => ipcRenderer.invoke('automations:removeSound', id, soundId),

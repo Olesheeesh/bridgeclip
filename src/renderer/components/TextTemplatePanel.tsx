@@ -29,12 +29,17 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, disabledRea
   const [draft, setDraft] = useState<TextTemplate>(saved ?? DEFAULT_TEXT_TEMPLATE)
   const [emojiInput, setEmojiInput] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
+  // Fork: opt-in rewrite of clips already approved for TikTok (they are reviewed again).
+  const [includeApproved, setIncludeApproved] = useState(false)
   useEffect(() => { setDraft(automation.textTemplate ?? DEFAULT_TEXT_TEMPLATE) }, [automation.id, automation.textTemplate])
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved ?? DEFAULT_TEXT_TEMPLATE) || !saved
   const valid = isTextTemplate(draft)
   const set = (patch: Partial<TextTemplate>): void => setDraft((current) => ({ ...current, ...patch }))
   const queued = automation.content.filter(canReorderContent)
+  const pickedSet = new Set(pickedIds)
+  const approvedPicked = queued.filter((item) => pickedSet.has(item.id) && item.tiktokApproval).length
+  const approvedQueued = queued.filter((item) => item.tiktokApproval).length
   const preview = useMemo(() => queued.slice(0, 3).map((item, index) => ({ id: item.id, ...applyTextTemplate(draft, item.templateBase ?? item.title, index + 1, item.aiEmojiFor === (item.templateBase ?? item.title) ? item.aiEmoji : undefined) })), [queued, draft])
 
   const run = async (action: string, request: () => Promise<void>): Promise<void> => {
@@ -44,9 +49,11 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, disabledRea
   const save = (): Promise<void> => run('save', async () => { onUpdated(await getApi().automations.setTextTemplate(automation.id, draft)); onNotice('Text template saved.') })
   const apply = (ids: string[] | null): Promise<void> => run(ids ? 'apply-picked' : 'apply-all', async () => {
     if (dirty) onUpdated(await getApi().automations.setTextTemplate(automation.id, draft))
-    const result = await getApi().automations.applyTextTemplate(automation.id, ids)
+    const result = await getApi().automations.applyTextTemplate(automation.id, ids, includeApproved)
     onUpdated(result.automations)
-    onNotice(`Template applied to ${result.applied} ${result.applied === 1 ? 'clip' : 'clips'}${result.skipped ? ` · ${result.skipped} left as they are (submitted, draft, or approved for TikTok)` : ''}.`)
+    onNotice(`Template applied to ${result.applied} ${result.applied === 1 ? 'clip' : 'clips'}` +
+      `${result.reapprove ? ` · ${result.reapprove} need TikTok review again: use “Review all for TikTok”` : ''}` +
+      `${result.skipped ? ` · ${result.skipped} left as they are (submitted, draft${includeApproved ? '' : ', or approved for TikTok: tick “Also update clips approved for TikTok”'})` : ''}.`)
   })
   const addEmoji = (emoji: string): void => {
     const value = emoji.trim()
@@ -128,6 +135,13 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, disabledRea
         </div>
       </details>
 
+      {approvedQueued > 0 && <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-warning/30 bg-warning/[0.06] px-3 py-2.5">
+        <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-[rgb(var(--accent))]" checked={includeApproved} onChange={(event) => setIncludeApproved(event.target.checked)} />
+        <span className="text-xs text-ink">
+          <span className="font-medium">Also update clips approved for TikTok</span> ({pickedIds.length ? `${approvedPicked} of the selected` : `${approvedQueued} in the queue`})
+          <span className="block text-ink-muted">Their TikTok approval is reset. They will not post to TikTok until you approve the new caption with “Review all for TikTok”.</span>
+        </span>
+      </label>}
       <div className="flex flex-wrap items-center gap-2 border-t border-hi/[0.06] pt-3">
         <Button size="sm" variant="primary" loading={busy === 'apply-picked'} disabled={!valid || pickedIds.length === 0} onClick={() => void apply(pickedIds)}
           title={pickedIds.length ? undefined : 'Tick clips in the queue first'}>Apply to selected ({pickedIds.length})</Button>
