@@ -119,6 +119,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
   const [picked, setPicked] = useState<Set<string>>(() => new Set())
   // Fork: find clips in the content bank by title or caption.
   const [contentQuery, setContentQuery] = useState('')
+  // Fork: the All / Ready / Submitted filter with counts, as in BridgeClip.
+  const [contentFilter, setContentFilter] = useState<'all' | 'ready' | 'submitted'>('all')
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const closeConfirm = useCallback(() => setConfirm(null), [])
   const selected = automations.find((automation) => automation.id === selectedId) ?? null
@@ -460,6 +462,9 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
     { label: 'Held clips', items: selected?.content.filter((item) => item.status === 'needs_review' && item.warningsAcknowledged) ?? [], empty: '' },
     { label: 'Submitted', items: selected?.content.filter((item) => item.status === 'posted') ?? [], empty: 'No clips submitted yet.' }
   ].map((group) => searching ? { ...group, items: group.items.filter(matches), empty: 'No clips match your search.' } : group)
+    .filter((group) => contentFilter === 'all' || (contentFilter === 'ready' ? group.label === 'Queued' : group.label === 'Submitted'))
+    .map((group) => contentFilter === 'ready' && selected ? { ...group, items: group.items.filter((item) => item.status === 'queued' && !needsTikTokReview(selected, item)), empty: 'No clips are ready to post.' } : group)
+  const filtering = searching || contentFilter !== 'all'
   const nextSlot = selected ? nextRunLabel(selected.times, selected.timezone) : null
   const savedReady = selected ? !missingSetup(selected) && !(selected.metadataMode === 'ai' && aiKeysMissing) : false
   const setupTodo = draft ? [
@@ -755,6 +760,11 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
               <Panel padded={false}>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3.5 py-2">
                   <h2 className="mr-auto text-sm font-semibold text-ink" title="The first ready clip in queue order posts next. Drag queued clips to reorder them. Clips awaiting TikTok review are skipped.">Content bank</h2>
+                  <Segmented size="sm" label="Show clips" value={contentFilter} onChange={setContentFilter} options={[
+                    { value: 'all', label: <>All <span className="tabular">{counts.all}</span></> },
+                    { value: 'ready', label: <>Ready <span className="tabular">{counts.ready}</span></> },
+                    { value: 'submitted', label: <>Submitted <span className="tabular">{counts.posted}</span></> }
+                  ]} />
                   {queueIds.length > 1 && <Button size="sm" variant="ghost" icon={<ListOrdered className="h-3 w-3" />} loading={busy === 'sort-timeline'} disabled={reorderDisabled}
                     title="Order queued clips by where they start in their source video (like the library's Timeline sort)" onClick={() => void sortQueueByTimeline()}>Sort by timeline</Button>}
                   {counts.tiktok_review > 0 && <Button size="sm" variant="primary" icon={<Check className="h-3 w-3" />} disabled={Boolean(busy) || dirty || Boolean(editing)} title="Review every clip waiting for TikTok on one screen and approve them together"
@@ -812,10 +822,10 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                       </div>
                       {group.label === 'Held clips' && <p className="px-3.5 py-2 text-2xs text-ink-subtle">Warnings acknowledged. These clips stay out of the queue until you review and return them.</p>}
                       {group.items.length === 0 && <p className="px-3.5 py-4 text-xs text-ink-subtle">{group.empty}</p>}
-                      <Droppable droppableId={group.label} isDropDisabled={group.label !== 'Queued' || reorderDisabled || searching}>
+                      <Droppable droppableId={group.label} isDropDisabled={group.label !== 'Queued' || reorderDisabled || filtering}>
                         {(listProvided, listSnapshot) => <ul ref={listProvided.innerRef} {...listProvided.droppableProps} className={cn('divide-y divide-hi/[0.06] transition-colors', listSnapshot.isDraggingOver && 'bg-accent/[0.035]')}>
                           {group.items.map((item, index) => (
-                            <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={reorderDisabled || searching || !canReorderContent(item)}>
+                            <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={reorderDisabled || filtering || !canReorderContent(item)}>
                               {(provided, snapshot) => <ContentRow
                                 dragProvided={provided}
                                 dragging={snapshot.isDragging}
