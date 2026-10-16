@@ -199,7 +199,8 @@ test('the native picker authorizes media and shell opening rejects aliased appli
       './zernio/posts': {},
       './automations': {},
       './library-posting': {},
-      './library-management': {}
+      './library-management': {},
+      './notification-channels': {}
     })
     ipc.registerIpcHandlers(() => window)
     assert.equal(handlers.has('framing:inspect'), false)
