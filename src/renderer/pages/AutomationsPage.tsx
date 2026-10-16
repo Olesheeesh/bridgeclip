@@ -465,6 +465,17 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
     .filter((group) => contentFilter === 'all' || (contentFilter === 'ready' ? group.label === 'Queued' : group.label === 'Submitted'))
     .map((group) => contentFilter === 'ready' && selected ? { ...group, items: group.items.filter((item) => item.status === 'queued' && !needsTikTokReview(selected, item)), empty: 'No clips are ready to post.' } : group)
   const filtering = searching || contentFilter !== 'all'
+  // Fork: jump bar targets. Scroll only the page area (scrollIntoView would also shift the window).
+  const jumpTo = (id: string): void => {
+    setContentFilter('all')
+    requestAnimationFrame(() => {
+      const root = document.getElementById('page-scroll'), target = document.getElementById(id)
+      if (!root || !target) return
+      const bar = document.getElementById('automation-jump-bar')?.offsetHeight ?? 0
+      const top = target.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop - bar - 12
+      root.scrollTo({ top: Math.max(0, Math.min(top, root.scrollHeight - root.clientHeight)), behavior: 'smooth' })
+    })
+  }
   const nextSlot = selected ? nextRunLabel(selected.times, selected.timezone) : null
   const savedReady = selected ? !missingSetup(selected) && !(selected.metadataMode === 'ai' && aiKeysMissing) : false
   const setupTodo = draft ? [
@@ -526,7 +537,13 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
           </nav>
 
           {selected && draft && (
-            <div className="mt-2 space-y-2">
+            <div id="automation-top" className="mt-2 space-y-2">
+              <nav id="automation-jump-bar" aria-label="Jump to" className="glass-thick sticky top-0 z-30 flex flex-wrap items-center gap-1.5 rounded-2xl px-2 py-1.5">
+                <Button size="sm" variant="ghost" className="min-h-11" icon={<ChevronsUp className="h-3.5 w-3.5" />} onClick={() => jumpTo('automation-top')}>Settings</Button>
+                <Button size="sm" variant="ghost" className="min-h-11" onClick={() => jumpTo('bank-queued')}>Ready <span className="tabular text-ink-muted">{counts.ready}</span></Button>
+                {counts.needs_review > 0 && <Button size="sm" variant="ghost" className="min-h-11 text-warning" onClick={() => jumpTo('bank-needs-attention')}>Needs attention <span className="tabular">{counts.needs_review}</span></Button>}
+                <Button size="sm" variant="ghost" className="min-h-11" onClick={() => jumpTo('bank-submitted')}>Submitted <span className="tabular text-ink-muted">{counts.posted}</span></Button>
+              </nav>
               <Panel padded={false}>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3.5 py-2">
                   <div className="min-w-0 flex-1">
@@ -810,7 +827,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                 {bulkProgress && <Callout tone="info" className="mt-3" action={<Button size="sm" onClick={() => { stopBulk.current = true; setBulkProgress('Stopping after the current operation…') }}>Stop after batch</Button>}>{bulkProgress}</Callout>}
                 <DragDropContext key={selected.id} onBeforeCapture={() => { contentInteraction.current = true; refreshVersion.current++ }} onDragEnd={(result) => void moveContent(result)}>
                   {contentGroups.filter((group) => !['Needs attention', 'Held clips'].includes(group.label) || group.items.length > 0).map((group) => (
-                    <section key={group.label} aria-label={group.label} className="border-t border-hi/[0.06]">
+                    <section key={group.label} id={`bank-${group.label.toLowerCase().replace(/\s+/g, '-')}`} aria-label={group.label} className="border-t border-hi/[0.06]">
                       <div className="flex flex-wrap items-center justify-between gap-2 bg-hi/[0.02] px-3.5 py-2.5">
                         <h3 className="flex items-center gap-2 text-xs font-semibold text-ink-muted">
                           {group.label === 'Queued' && queueIds.length > 0 && <Checkbox checked={pickedIds.length === queueIds.length} indeterminate={pickedIds.length > 0 && pickedIds.length < queueIds.length}
