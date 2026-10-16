@@ -36,3 +36,13 @@ test('timelineQueueOrder groups by source in first-seen order and sorts by start
   const order = timelineQueueOrder(content, (item) => at[item.id] ? { source: at[item.id][0], startMs: at[item.id][1] } : null)
   assert.deepEqual(order, ['x1', 'x2', 'y0', 'y1', 'lost'])
 })
+
+test('groupMovedBefore drops a dragged picked group before a clip, keeping its order', () => {
+  const { groupMovedBefore } = shared()
+  const content = [queued('a'), queued('b'), posted, queued('c'), queued('d'), queued('e')]
+  assert.deepEqual(groupMovedBefore(content, ['d', 'b'], 'a'), ['b', 'd', 'a', 'c', 'e'])
+  assert.deepEqual(groupMovedBefore(content, ['a', 'c'], null), ['b', 'd', 'e', 'a', 'c'])
+  assert.deepEqual(groupMovedBefore(content, ['a', 'd'], 'e'), ['b', 'c', 'a', 'd', 'e'])
+  // Dropped on its own member: lands before the next unpicked clip.
+  assert.deepEqual(groupMovedBefore(content, ['b', 'c'], 'c'), ['a', 'b', 'c', 'd', 'e'])
+})

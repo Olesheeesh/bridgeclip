@@ -266,6 +266,22 @@ export function setQueuedOrder(content: AutomationContent[], orderedIds: readonl
   return content.map((entry) => canReorderContent(entry) ? byId.get(orderedIds[index++])! : entry)
 }
 
+/**
+ * Fork: queued ids after dragging a picked group so it lands before `beforeId`
+ * (null = the end). Picked clips keep their order; if `beforeId` is itself
+ * picked, the group lands before the next unpicked clip after it.
+ */
+export function groupMovedBefore(content: readonly AutomationContent[], picked: readonly string[], beforeId: string | null): string[] {
+  const order = content.filter(canReorderContent).map((item) => item.id)
+  const chosen = new Set(picked)
+  const group = order.filter((id) => chosen.has(id))
+  let anchor = beforeId
+  if (anchor !== null && chosen.has(anchor)) anchor = order.slice(order.indexOf(anchor) + 1).find((id) => !chosen.has(id)) ?? null
+  const rest = order.filter((id) => !chosen.has(id))
+  const at = anchor === null ? rest.length : rest.indexOf(anchor)
+  return [...rest.slice(0, at < 0 ? rest.length : at), ...group, ...rest.slice(at < 0 ? rest.length : at)]
+}
+
 export type QueueMove = 'top' | 'up' | 'down' | 'bottom'
 
 /** Fork: queued ids after moving the picked ones; picked clips keep their order among themselves. */

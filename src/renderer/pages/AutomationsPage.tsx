@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Draggable, Droppable, type DraggableProvided, type DropResult } from '@hello-pangea/dnd'
 import { ArrowDown, ArrowUp, Check, ChevronsDown, ChevronsUp, FolderOpen, GripVertical, Info, ListOrdered, Pencil, Play, Plus, RefreshCw, Search, Sparkles, Trash2, Workflow, X } from 'lucide-react'
-import { canReorderContent, reorderQueuedContent, hasAutomationWarnings, hasContentWarnings, hasEnhancedMetadata, movedQueueOrder, setQueuedOrder, type QueueMove } from '../../shared/automations'
+import { canReorderContent, groupMovedBefore, reorderQueuedContent, hasAutomationWarnings, hasContentWarnings, hasEnhancedMetadata, movedQueueOrder, setQueuedOrder, type QueueMove } from '../../shared/automations'
 import { MAX_ENHANCEMENT_GUIDANCE, AUTOMATION_PLATFORMS, needsTikTokReview, nextAutomationContent, type Automation, type AutomationContent, type AutomationContentStatus, type AutomationUpdate, type AutomationSourceGroup } from '../../shared/automations'
 import { isPostableAccount, isValidProfileName } from '../../shared/zernio'
 import { AutomationTikTokReviewDialog } from '../components/AutomationTikTokReviewDialog'
@@ -350,6 +350,14 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
     if (from < 0 || to < 0) return
     const beforeId = from < to ? queue[to + 1]?.id ?? null : target.id
     const previous = selected.content
+    // Fork: dragging a picked clip carries the whole picked group with it.
+    if (picked.has(draggableId) && pickedIds.length > 1) {
+      const order = groupMovedBefore(previous, pickedIds, beforeId)
+      setAutomations((items) => items.map((item) => item.id === selected.id ? { ...item, content: setQueuedOrder(previous, order) } : item))
+      const moved = await mutate('reorder', () => getApi().automations.setQueueOrder(selected.id, order))
+      if (!moved) setAutomations((items) => items.map((item) => item.id === selected.id ? { ...item, content: previous } : item))
+      return
+    }
     const content = reorderQueuedContent(previous, draggableId, beforeId)
     // Commit immediately so the drop settles into its final place while IPC saves.
     setAutomations((items) => items.map((item) => item.id === selected.id ? { ...item, content } : item))
@@ -543,6 +551,14 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                 <Button size="sm" variant="ghost" className="min-h-11" onClick={() => jumpTo('bank-queued')}>Ready <span className="tabular text-ink-muted">{counts.ready}</span></Button>
                 {counts.needs_review > 0 && <Button size="sm" variant="ghost" className="min-h-11 text-warning" onClick={() => jumpTo('bank-needs-attention')}>Needs attention <span className="tabular">{counts.needs_review}</span></Button>}
                 <Button size="sm" variant="ghost" className="min-h-11" onClick={() => jumpTo('bank-submitted')}>Submitted <span className="tabular text-ink-muted">{counts.posted}</span></Button>
+                {pickedIds.length > 0 && <div role="toolbar" aria-label="Move selected clips together" className="ml-auto flex flex-wrap items-center gap-1 rounded-xl bg-accent/[0.08] px-1.5 py-1">
+                  <span className="px-1.5 text-xs text-ink"><span className="tabular font-semibold">{pickedIds.length}</span> selected</span>
+                  <Button size="sm" variant="secondary" className="min-h-11" icon={<ChevronsUp className="h-3.5 w-3.5" />} disabled={reorderDisabled} title="Move the selected clips to the top of the queue" onClick={() => void moveQueue(pickedIds, 'top')}>To top</Button>
+                  <Button size="sm" variant="secondary" className="min-h-11" icon={<ArrowUp className="h-3.5 w-3.5" />} disabled={reorderDisabled} aria-label="Move selected clips up" onClick={() => void moveQueue(pickedIds, 'up')} />
+                  <Button size="sm" variant="secondary" className="min-h-11" icon={<ArrowDown className="h-3.5 w-3.5" />} disabled={reorderDisabled} aria-label="Move selected clips down" onClick={() => void moveQueue(pickedIds, 'down')} />
+                  <Button size="sm" variant="secondary" className="min-h-11" icon={<ChevronsDown className="h-3.5 w-3.5" />} disabled={reorderDisabled} title="Move the selected clips to the bottom of the queue" onClick={() => void moveQueue(pickedIds, 'bottom')}>To bottom</Button>
+                  <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setPicked(new Set())}>Clear</Button>
+                </div>}
               </nav>
               <Panel padded={false}>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3.5 py-2">
@@ -872,7 +888,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                                 onShowInFolder={() => void showInFolder(item)}
                                 picked={picked.has(item.id)}
                                 onPick={(on) => setPicked((current) => { const next = new Set(current); if (on) next.add(item.id); else next.delete(item.id); return next })}
-                                onMove={(to) => void moveQueue([item.id], to)}
+                                // Fork: arrows on a picked row move the whole picked group together.
+                                onMove={(to) => void moveQueue(picked.has(item.id) && pickedIds.length > 1 ? pickedIds : [item.id], to)}
                                 moveDisabled={reorderDisabled}
                               />}
                             </Draggable>
