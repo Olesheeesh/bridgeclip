@@ -39,7 +39,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   ...JEV_FEATURE_DEFAULTS,
   openrouterApiKey: '',
   zernioApiKey: '',
-  outputDirectory: join(app.getPath('home'), 'BridgeClip'),
+  outputDirectory: join(app.getPath('home'), 'BridgeClip Fork'),
   pythonPath: process.platform === 'win32' ? 'python' : 'python3',
   customVocabulary: ''
 }

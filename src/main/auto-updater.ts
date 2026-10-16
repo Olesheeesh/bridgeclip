@@ -53,7 +53,8 @@ function signedByBridgeMind(): Promise<boolean> {
 }
 
 async function updatesOffReason(): Promise<UpdatesOffReason | null> {
-  if (process.env.BRIDGECLIP_DISABLE_AUTO_UPDATE === '1') return 'disabled'
+  // Fork: never pull upstream's releases over this build; set BRIDGECLIP_DISABLE_AUTO_UPDATE=0 to opt in.
+  if (process.env.BRIDGECLIP_DISABLE_AUTO_UPDATE !== '0') return 'disabled'
   if (is.dev || !app.isPackaged) return 'development'
   if (process.platform === 'darwin') {
     if (!(await signedByBridgeMind())) return 'unofficial'

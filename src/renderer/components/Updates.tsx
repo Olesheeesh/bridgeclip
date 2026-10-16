@@ -64,7 +64,7 @@ function describe(update: UpdateState): string {
         development: 'Updates are off when running from source. Pull the latest code to update.',
         unofficial: 'Updates are off for builds not signed by BridgeMind. Download the official app from bridgeclip.ai to get updates.',
         'move-to-applications': 'Move BridgeClip to your Applications folder to get updates.',
-        disabled: 'Updates are turned off (BRIDGECLIP_DISABLE_AUTO_UPDATE).'
+        disabled: 'Updates are turned off in this fork.'
       }[update.reason]
     case 'idle':
       return `BridgeClip checks for updates automatically.${checked}`

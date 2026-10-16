@@ -1,6 +1,6 @@
-appId: com.bridgemind.bridgeclip
-productName: BridgeClip
-artifactName: BridgeClip-${version}-${os}-${arch}.${ext}
+appId: com.olesheeesh.bridgeclipfork
+productName: BridgeClip Fork
+artifactName: BridgeClip-Fork-${version}-${os}-${arch}.${ext}
 copyright: Copyright © 2026 BridgeMind LLC
 
 # Disable production debug/code-injection entry points and validate app.asar.
@@ -137,5 +137,5 @@ deb:
 # latest-mac.yml / latest.yml / latest-linux.yml from the published release.
 publish:
   provider: github
-  owner: bridge-mind
+  owner: Olesheeesh
   repo: bridgeclip

@@ -191,7 +191,7 @@ protocol.registerSchemesAsPrivileged([
 
 app.whenReady().then(() => {
   cleanStaleWorkspaces()
-  electronApp.setAppUserModelId('com.bridgemind.bridgeclip')
+  electronApp.setAppUserModelId('com.olesheeesh.bridgeclipfork')
   if (hiddenForTests) app.dock?.hide()
 
   // Boot-time diagnostic dump. This is the first thing in the log file and

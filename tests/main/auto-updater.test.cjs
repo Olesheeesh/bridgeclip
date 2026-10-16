@@ -132,7 +132,7 @@ test('other update errors are not retried', async () => {
 
 const SIGNED = 'Executable=/Applications/BridgeClip.app/Contents/MacOS/BridgeClip\nAuthority=Developer ID Application: BRIDGEMIND LLC (9CBJCDR3J2)\nTeamIdentifier=9CBJCDR3J2\n'
 
-function setup({ platform = 'darwin', dev = false, packaged = true, env = {}, codesign = SIGNED, holdCodesign = false, exe = '/Applications/BridgeClip.app/Contents/MacOS/BridgeClip' } = {}) {
+function setup({ platform = 'darwin', dev = false, packaged = true, env = { BRIDGECLIP_DISABLE_AUTO_UPDATE: '0' }, codesign = SIGNED, holdCodesign = false, exe = '/Applications/BridgeClip.app/Contents/MacOS/BridgeClip' } = {}) {
   const handlers = {}
   let releaseCodesign = null
   const sent = []
@@ -208,6 +208,7 @@ test('official macOS builds read the platform-aware GitHub feed and download in 
 for (const [name, options, reason] of [
   ['running from source', { dev: true, packaged: false }, 'development'],
   ['turned off by the environment', { env: { BRIDGECLIP_DISABLE_AUTO_UPDATE: '1' } }, 'disabled'],
+  ['off by default in the fork', { env: {} }, 'disabled'],
   ['a macOS build not signed by BridgeMind', { codesign: '' }, 'unofficial'],
   ['a macOS build signed by another team', { codesign: 'Authority=Developer ID Application: Someone Else (ABCDE12345)\nTeamIdentifier=ABCDE12345\n' }, 'unofficial'],
   ['a macOS app running from its disk image', { exe: '/Volumes/BridgeClip/BridgeClip.app/Contents/MacOS/BridgeClip' }, 'move-to-applications'],
