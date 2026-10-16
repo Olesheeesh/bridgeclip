@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Draggable, Droppable, type DraggableProvided, type DropResult } from '@hello-pangea/dnd'
-import { ArrowDown, ArrowUp, Check, ChevronsDown, ChevronsUp, FolderOpen, GripVertical, Info, ListOrdered, Pencil, Play, Plus, RefreshCw, Sparkles, Trash2, Workflow, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, ChevronsDown, ChevronsUp, FolderOpen, GripVertical, Info, ListOrdered, Pencil, Play, Plus, RefreshCw, Search, Sparkles, Trash2, Workflow, X } from 'lucide-react'
 import { canReorderContent, reorderQueuedContent, hasAutomationWarnings, hasContentWarnings, hasEnhancedMetadata, movedQueueOrder, setQueuedOrder, type QueueMove } from '../../shared/automations'
 import { MAX_ENHANCEMENT_GUIDANCE, AUTOMATION_PLATFORMS, needsTikTokReview, nextAutomationContent, type Automation, type AutomationContent, type AutomationContentStatus, type AutomationUpdate, type AutomationSourceGroup } from '../../shared/automations'
 import { isPostableAccount, isValidProfileName } from '../../shared/zernio'
@@ -117,6 +117,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
   const [batchReview, setBatchReview] = useState<AutomationContent[] | null>(null)
   /** Fork: queued clips ticked for bulk moves. */
   const [picked, setPicked] = useState<Set<string>>(() => new Set())
+  // Fork: find clips in the content bank by title or caption.
+  const [contentQuery, setContentQuery] = useState('')
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const closeConfirm = useCallback(() => setConfirm(null), [])
   const selected = automations.find((automation) => automation.id === selectedId) ?? null
@@ -445,12 +447,19 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
   const reorderDisabled = Boolean(busy) || dirty || Boolean(editing) || Boolean(selected?.content.some((item) => item.status === 'posting'))
   const queueIds = selected?.content.filter(canReorderContent).map((item) => item.id) ?? []
   const pickedIds = queueIds.filter((id) => picked.has(id))
+  const searchTerms = contentQuery.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean)
+  const searching = searchTerms.length > 0
+  const matches = (item: { title: string; caption: string }): boolean => {
+    if (!searching) return true
+    const text = `${item.title} ${item.caption}`.toLocaleLowerCase()
+    return searchTerms.every((term) => text.includes(term))
+  }
   const contentGroups = [
     { label: 'Queued', items: selected?.content.filter((item) => item.status === 'queued' || item.status === 'posting') ?? [], empty: 'No clips waiting to be submitted.' },
     { label: 'Needs attention', items: selected?.content.filter((item) => item.status === 'needs_review' && !item.warningsAcknowledged) ?? [], empty: '' },
     { label: 'Held clips', items: selected?.content.filter((item) => item.status === 'needs_review' && item.warningsAcknowledged) ?? [], empty: '' },
     { label: 'Submitted', items: selected?.content.filter((item) => item.status === 'posted') ?? [], empty: 'No clips submitted yet.' }
-  ]
+  ].map((group) => searching ? { ...group, items: group.items.filter(matches), empty: 'No clips match your search.' } : group)
   const nextSlot = selected ? nextRunLabel(selected.times, selected.timezone) : null
   const savedReady = selected ? !missingSetup(selected) && !(selected.metadataMode === 'ai' && aiKeysMissing) : false
   const setupTodo = draft ? [
@@ -772,6 +781,14 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                     <Button size="sm" disabled={Boolean(busy) || dirty} onClick={() => void enhanceQueued()}>Enhance {Math.min(30, activeSourceGroup?.contentIds.length ?? 0)} {activeSourceGroup?.contentIds.length === 1 ? 'clip' : 'clips'} from this video</Button>
                   </> : <p className="text-sm text-ink-muted">No queued clips need a new draft.</p>}
                 </div>}
+                <div className="flex flex-wrap items-center gap-2 border-t border-hi/[0.06] px-3.5 py-2">
+                  <TextInput className="w-full max-w-sm" inputSize="sm" aria-label="Search clips in this content bank" placeholder="Search clips by title or caption"
+                    value={contentQuery} onChange={(event) => setContentQuery(event.target.value)} leading={<Search className="h-3.5 w-3.5" />} />
+                  {searching && <>
+                    <span className="text-xs text-ink-muted">{contentGroups.reduce((total, group) => total + group.items.length, 0)} found · drag to reorder is off while searching</span>
+                    <Button size="sm" variant="ghost" onClick={() => setContentQuery('')}>Clear search</Button>
+                  </>}
+                </div>
                 {pickedIds.length > 0 && <div role="toolbar" aria-label="Move selected clips" className="flex flex-wrap items-center gap-1.5 border-t border-hi/[0.06] bg-accent/[0.04] px-3.5 py-2">
                   <span className="mr-1 text-xs text-ink">{pickedIds.length} selected</span>
                   <Button size="sm" variant="secondary" icon={<ChevronsUp className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'top')}>To top</Button>
@@ -795,10 +812,10 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                       </div>
                       {group.label === 'Held clips' && <p className="px-3.5 py-2 text-2xs text-ink-subtle">Warnings acknowledged. These clips stay out of the queue until you review and return them.</p>}
                       {group.items.length === 0 && <p className="px-3.5 py-4 text-xs text-ink-subtle">{group.empty}</p>}
-                      <Droppable droppableId={group.label} isDropDisabled={group.label !== 'Queued' || reorderDisabled}>
+                      <Droppable droppableId={group.label} isDropDisabled={group.label !== 'Queued' || reorderDisabled || searching}>
                         {(listProvided, listSnapshot) => <ul ref={listProvided.innerRef} {...listProvided.droppableProps} className={cn('divide-y divide-hi/[0.06] transition-colors', listSnapshot.isDraggingOver && 'bg-accent/[0.035]')}>
                           {group.items.map((item, index) => (
-                            <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={reorderDisabled || !canReorderContent(item)}>
+                            <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={reorderDisabled || searching || !canReorderContent(item)}>
                               {(provided, snapshot) => <ContentRow
                                 dragProvided={provided}
                                 dragging={snapshot.isDragging}
