@@ -49,6 +49,13 @@ function boundedText(value: unknown, max: number): string | null {
   return typeof value === 'string' ? value.slice(0, max) : null
 }
 
+/** Fork: some videos are titled with only invisible characters (a zero-width space); name them by channel instead of showing a blank. */
+function visibleTitle(title: string | null, channel: string | null): string {
+  const unseen = /[\s­͏ᅟᅠ᠎​-‏‪-‮⁠-⁯ㅤ﻿]/g
+  if (title && title.replace(unseen, '')) return title
+  return channel && channel.replace(unseen, '') ? `Video by ${channel.trim()}` : 'Untitled video'
+}
+
 function nonNegative(value: unknown): value is number {
   return finite(value) && value >= 0
 }
@@ -199,7 +206,7 @@ export function parseJobOutput(value: unknown): JobOutput | null {
     source_video_url: boundedText(value.source_video_url, 8192) ?? '',
     source_video_description: boundedText(value.source_video_description, 20000),
     source_video_channel: boundedText(value.source_video_channel, 1024),
-    source_video_title: boundedText(value.source_video_title, 1024) ?? 'Untitled video',
+    source_video_title: visibleTitle(boundedText(value.source_video_title, 1024), boundedText(value.source_video_channel, 1024)),
     source_video_duration_seconds: finite(value.source_video_duration_seconds) ? value.source_video_duration_seconds : 0,
     total_clips: clips.length,
     clips,
