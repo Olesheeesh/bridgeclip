@@ -267,7 +267,7 @@ export interface BridgeClipAPI {
     onShow: (cb: () => void) => () => void
     /** Check now; resolves with the state once the check finishes. */
     check: () => Promise<UpdateState>
-    /** Quit and install the downloaded update, then reopen BridgeClip. */
+    /** Quit and install the downloaded update, then reopen MerveilleClip. */
     install: () => Promise<boolean>
     /** macOS: move the app out of the disk image or Downloads so it can update. */
     moveToApplications: () => Promise<boolean>

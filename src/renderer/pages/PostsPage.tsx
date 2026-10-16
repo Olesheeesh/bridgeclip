@@ -61,7 +61,7 @@ export function PostsPage({ onNavigate }: { onNavigate: (page: Page) => void }):
             className="mt-4"
             icon={<Send />}
             title="Connect your social accounts"
-            description="Clips you post or schedule from BridgeClip show up here once Zernio is set up in Accounts."
+            description="Clips you post or schedule from MerveilleClip show up here once Zernio is set up in Accounts."
             action={<Button variant="primary" onClick={() => onNavigate('accounts')}>Open Accounts</Button>}
           />
         </>
@@ -70,7 +70,7 @@ export function PostsPage({ onNavigate }: { onNavigate: (page: Page) => void }):
   )
 }
 
-/** Posts made from BridgeClip: scheduled, failed and recent, with cancel, retry and links. */
+/** Posts made from MerveilleClip: scheduled, failed and recent, with cancel, retry and links. */
 function PostsList({ onNavigate }: { onNavigate: (page: Page) => void }): React.JSX.Element {
   const { posts, loaded, refreshing, error, clearError, refresh } = usePostsStore()
   const [showAll, setShowAll] = useState(false)
@@ -147,7 +147,7 @@ function PostsList({ onNavigate }: { onNavigate: (page: Page) => void }): React.
             <PostGroup title="Needs attention" posts={groups.attention} />
             <PostGroup title="Recent" posts={recent} />
             {groups.recent.length > RECENT_LIMIT && (
-              <div className="border-t border-white/[0.06] px-2.5 py-1.5">
+              <div className="border-t border-hi/[0.06] px-2.5 py-1.5">
                 <Button variant="ghost" size="sm" onClick={() => setShowAll((v) => !v)}>
                   {showAll ? 'Show fewer' : `Show all ${groups.recent.length}`}
                 </Button>
@@ -156,7 +156,7 @@ function PostsList({ onNavigate }: { onNavigate: (page: Page) => void }): React.
           </Panel>
         )}
 
-        <p className="px-1 text-2xs text-ink-subtle">Zernio publishes scheduled posts even when BridgeClip is closed.</p>
+        <p className="px-1 text-2xs text-ink-subtle">Zernio publishes scheduled posts even when MerveilleClip is closed.</p>
       </div>
     </>
   )
@@ -165,12 +165,12 @@ function PostsList({ onNavigate }: { onNavigate: (page: Page) => void }): React.
 function PostGroup({ title, posts }: { title: string; posts: PostRecord[] }): React.JSX.Element | null {
   if (posts.length === 0) return null
   return (
-    <section className="border-t border-white/[0.06] first:border-t-0" aria-label={title}>
+    <section className="border-t border-hi/[0.06] first:border-t-0" aria-label={title}>
       <h2 className="eyebrow flex items-center gap-2 px-4 pb-0.5 pt-2">
         {title}
-        <span className="rounded-full bg-white/[0.07] px-1.5 py-px font-mono text-[10px] tabular tracking-normal text-ink-muted">{posts.length}</span>
+        <span className="rounded-full bg-hi/[0.07] px-1.5 py-px font-mono text-[10px] tabular tracking-normal text-ink-muted">{posts.length}</span>
       </h2>
-      <ul className="divide-y divide-white/[0.05]">
+      <ul className="divide-y divide-hi/[0.05]">
         {posts.map((post) => <PostRow key={post.id} post={post} />)}
       </ul>
     </section>
@@ -189,7 +189,7 @@ function PostThumb({ clipPath }: { clipPath: string }): React.JSX.Element {
       src={localFileUrl(thumb)}
       alt=""
       draggable={false}
-      className="h-10 w-10 shrink-0 rounded-lg object-cover shadow-[0_6px_16px_-8px_rgb(0_0_0/0.7)] ring-1 ring-white/[0.12]"
+      className="h-10 w-10 shrink-0 rounded-lg object-cover shadow-[0_6px_16px_-8px_rgb(0_0_0/0.7)] ring-1 ring-hi/[0.12]"
     />
   ) : (
     <span aria-hidden className="glass-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-ink-subtle">
@@ -271,7 +271,7 @@ function PostRow({ post }: { post: PostRecord }): React.JSX.Element {
   }
 
   return (
-    <li className="py-2 pl-4 pr-2.5 transition-colors duration-150 hover:bg-white/[0.02]">
+    <li className="py-2 pl-4 pr-2.5 transition-colors duration-150 hover:bg-hi/[0.02]">
       <div className="flex items-start gap-3">
         <PostThumb clipPath={post.clipPath} />
         <div className="min-w-0 flex-1">
@@ -289,7 +289,7 @@ function PostRow({ post }: { post: PostRecord }): React.JSX.Element {
                   <span className={cn(badge.tone === 'danger' ? 'text-danger' : badge.tone === 'accent' ? 'text-accent' : 'text-ink-subtle')}>· {badge.label}</span>
                 </>
               )
-              const className = 'inline-flex h-[22px] items-center gap-1.5 rounded-full bg-white/[0.05] pl-[3px] pr-2 text-2xs text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.09),inset_0_1px_0_rgb(255_255_255/0.06)]'
+              const className = 'inline-flex h-[22px] items-center gap-1.5 rounded-full bg-hi/[0.05] pl-[3px] pr-2 text-2xs text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.09),inset_0_1px_0_rgb(255_255_255/0.06)]'
               return target.url ? (
                 <button
                   key={`${target.platform}:${target.accountId}`}
@@ -297,7 +297,7 @@ function PostRow({ post }: { post: PostRecord }): React.JSX.Element {
                   onClick={() => open(post.id, index)}
                   title={`Open on ${platformName(target.platform)}`}
                   aria-label={`Open on ${platformName(target.platform)}, ${target.handle ?? 'account'}, ${badge.label}`}
-                  className={cn(className, 'transition-[background,box-shadow,color] duration-150 hover:bg-white/[0.09] hover:text-ink hover:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.16),inset_0_1px_0_rgb(255_255_255/0.08)]')}
+                  className={cn(className, 'transition-[background,box-shadow,color] duration-150 hover:bg-hi/[0.09] hover:text-ink hover:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.16),inset_0_1px_0_rgb(255_255_255/0.08)]')}
                 >
                   {chip}
                   <ArrowUpRight className="h-3 w-3" />

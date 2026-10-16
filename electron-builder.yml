@@ -33,6 +33,8 @@ extraResources:
     to: THIRD_PARTY_NOTICES.md
   - from: src/renderer/assets/fonts/Geist-OFL.txt
     to: Geist-OFL.txt
+  - from: src/renderer/assets/fonts/Sherbet-OFL.txt
+    to: Sherbet-OFL.txt
   - from: bridge
     to: bridge
     filter:
@@ -106,6 +108,10 @@ nsis:
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
   installerHeaderIcon: build/icon.ico
+  # Fork: shown name is MerveilleClip; productName stays "BridgeClip Fork" so
+  # the settings folder (%APPDATA%\BridgeClip Fork) and library are kept.
+  shortcutName: MerveilleClip
+  uninstallDisplayName: MerveilleClip
 
 linux:
   # Builder otherwise expands x64 as x86_64 for AppImage and amd64 for DEB.

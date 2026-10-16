@@ -18,7 +18,7 @@ export function notifyJobFinished(snapshot: JobSnapshot, getWindow: () => Browse
   const clips = snapshot.output?.total_clips ?? snapshot.clipsDone
   const title = snapshot.status === 'completed' ? 'Clips are ready' : 'Generation failed'
   const body = snapshot.status === 'completed'
-    ? `${clips} ${clips === 1 ? 'clip' : 'clips'} finished. Click to open BridgeClip Fork.`
+    ? `${clips} ${clips === 1 ? 'clip' : 'clips'} finished. Click to open MerveilleClip.`
     : (snapshot.error ?? 'The clipping engine stopped.').slice(0, 200)
 
   const window = getWindow()

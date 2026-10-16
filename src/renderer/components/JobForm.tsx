@@ -230,13 +230,13 @@ function Stepper({ current, reachable, onSelect }: { current: WizardStep; reacha
                 aria-current={active ? 'step' : undefined}
                 className={cn(
                   'group flex min-w-0 items-center gap-2 rounded-full py-1 pl-1 pr-2.5 text-xs transition-colors duration-200',
-                  active ? 'bg-white/[0.08] font-medium text-ink' : enabled ? 'text-ink-muted hover:bg-white/[0.05] hover:text-ink' : 'text-ink-faint'
+                  active ? 'bg-hi/[0.08] font-medium text-ink' : enabled ? 'text-ink-muted hover:bg-hi/[0.05] hover:text-ink' : 'text-ink-faint'
                 )}
               >
                 <span
                   className={cn(
                     'flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-2xs tabular',
-                    active ? 'bg-accent text-accent-ink' : done ? 'bg-ink text-canvas' : 'bg-white/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]'
+                    active ? 'bg-accent text-accent-ink' : done ? 'bg-ink text-canvas' : 'bg-hi/[0.06] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]'
                   )}
                 >
                   {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
@@ -244,7 +244,7 @@ function Stepper({ current, reachable, onSelect }: { current: WizardStep; reacha
                 <span className={cn('truncate', !active && 'max-md:hidden')}>{s.label}</span>
               </button>
               {i < WIZARD_STEPS.length - 1 && (
-                <span aria-hidden className={cn('h-px min-w-3 flex-1', done ? 'bg-ink/40' : 'bg-white/[0.08]')} />
+                <span aria-hidden className={cn('h-px min-w-3 flex-1', done ? 'bg-ink/40' : 'bg-hi/[0.08]')} />
               )}
             </li>
           )
@@ -258,7 +258,7 @@ function VideoStep({ draft, update, trimError, disabled }: { draft: ClipDraft; u
   return (
     <div className="space-y-3">
       <WorkflowPicker value={draft.workflow} onChange={(workflow) => update({ workflow })} disabled={disabled} />
-      <section aria-labelledby="video-source-heading" className="space-y-3 border-t border-white/[0.06] pt-4">
+      <section aria-labelledby="video-source-heading" className="space-y-3 border-t border-hi/[0.06] pt-4">
         <div>
           <h2 id="video-source-heading" className="text-sm font-semibold text-ink">{WIZARD_STEPS[0].title}</h2>
           <p className="mt-0.5 text-xs text-ink-muted">{WIZARD_STEPS[0].description}</p>
@@ -349,7 +349,7 @@ export function FormatStep({ draft, update }: { draft: ClipDraft; update: Update
                   <span
                     className={cn(
                       'rounded-[4px] border-[1.5px] transition-colors duration-200',
-                      selected ? 'border-accent bg-accent/25' : 'border-ink-subtle bg-white/[0.04]'
+                      selected ? 'border-accent bg-accent/25' : 'border-ink-subtle bg-hi/[0.04]'
                     )}
                     style={{ width: f.w, height: f.h }}
                   />
@@ -616,7 +616,7 @@ function ReviewStep({ draft, trim, onEdit }: {
 
   return (
     <div className="space-y-3">
-      <dl className="glass-well divide-y divide-white/[0.05] overflow-hidden rounded-xl">
+      <dl className="glass-well divide-y divide-hi/[0.05] overflow-hidden rounded-xl">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center gap-3 px-3 py-2">
             <dt className="w-20 shrink-0 text-xs text-ink-subtle">{row.label}</dt>
@@ -653,7 +653,7 @@ function StartedPanel({ className, onViewJob }: { className?: string; onViewJob?
       <p className="mt-1 max-w-md text-xs text-ink-subtle">
         {started.queued
           ? `Up to ${MAX_PARALLEL_JOBS} jobs run at once. This one starts as soon as a slot frees up.`
-          : 'It keeps running while you queue more videos or use the rest of BridgeClip.'}
+          : 'It keeps running while you queue more videos or use the rest of MerveilleClip.'}
       </p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
         <Button variant="primary" icon={<Plus className="h-3.5 w-3.5" />} onClick={startAnother}>
@@ -672,7 +672,7 @@ function StartedPanel({ className, onViewJob }: { className?: string; onViewJob?
 function AdvancedModels({ draft, update }: { draft: ClipDraft; update: Update }): React.JSX.Element {
   const { catalog, loading, error, load } = useModelStore()
   useEffect(() => { void load() }, [load])
-  return <div className="mt-3 space-y-4 rounded-xl border border-white/10 p-3">
+  return <div className="mt-3 space-y-4 rounded-xl border border-hi/10 p-3">
     <div className="flex items-center justify-between gap-3">
       <p className="text-xs text-ink-muted">Search OpenRouter’s live model catalog.</p>
       <Button size="sm" variant="ghost" loading={loading} disabled={loading} onClick={() => void load(true)}>Refresh models</Button>

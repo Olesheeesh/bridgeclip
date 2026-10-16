@@ -207,7 +207,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
     setBusy('group-sources'); setError(null); setSourceGroups(null)
     try {
       const groups = await getApi().automations.enhancementGroups(selected.id)
-      if (groups.some((group) => !group.sourceType)) throw new Error('Restart BridgeClip to use source enhancement prompts.')
+      if (groups.some((group) => !group.sourceType)) throw new Error('Restart MerveilleClip to use source enhancement prompts.')
       setSourceGroups(groups); setSourceGroupKey(groups[0]?.key ?? '')
     } catch (cause) { setError(errorMessage(cause, 'Could not group clips by source.')) }
     finally { setBusy(null) }
@@ -564,7 +564,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                   </div>}
                 </div>
 
-                <div className="divide-y divide-white/[0.06] border-t border-white/[0.06]">
+                <div className="divide-y divide-hi/[0.06] border-t border-hi/[0.06]">
                   <Row label="Profile" htmlFor="automation-profile">
                     <div className="flex items-center gap-1">
                       <Select
@@ -617,8 +617,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                                 'group/chip inline-flex h-7 max-w-[200px] items-center gap-1.5 rounded-full border pl-0.5 pr-2.5 text-xs transition-colors duration-150',
                                 checked
                                   ? 'border-accent/60 bg-accent/[0.14] text-ink'
-                                  : 'border-white/[0.08] bg-white/[0.03] text-ink-muted hover:border-white/[0.14] hover:text-ink',
-                                !available && 'cursor-not-allowed opacity-50 hover:border-white/[0.08] hover:text-ink-muted'
+                                  : 'border-hi/[0.08] bg-hi/[0.03] text-ink-muted hover:border-hi/[0.14] hover:text-ink',
+                                !available && 'cursor-not-allowed opacity-50 hover:border-hi/[0.08] hover:text-ink-muted'
                               )}
                             >
                               <PlatformIcon
@@ -634,7 +634,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                           type="button"
                           disabled={Boolean(busy)}
                           onClick={() => void connectAccount()}
-                          className="inline-flex h-7 items-center gap-1 rounded-full border border-dashed border-white/[0.16] px-2.5 text-xs text-ink-muted transition-colors duration-150 hover:border-white/[0.3] hover:text-ink disabled:opacity-50"
+                          className="inline-flex h-7 items-center gap-1 rounded-full border border-dashed border-hi/[0.16] px-2.5 text-xs text-ink-muted transition-colors duration-150 hover:border-hi/[0.3] hover:text-ink disabled:opacity-50"
                         >
                           <Plus aria-hidden className="h-3 w-3" />Connect
                         </button>
@@ -654,13 +654,13 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                   <Row
                     label="Schedule"
                     labelId="automation-schedule"
-                    hint="One clip at each time, daily. Keep BridgeClip open."
+                    hint="One clip at each time, daily. Keep MerveilleClip open."
                   >
                     <div role="group" aria-labelledby="automation-schedule" className="flex flex-wrap items-center gap-1">
                       {draft.times.map((time) => (
-                        <span key={time} className="inline-flex h-7 items-center rounded-full border border-white/[0.08] bg-white/[0.03] pl-2.5 pr-0.5 font-mono text-2xs tabular text-ink">
+                        <span key={time} className="inline-flex h-7 items-center rounded-full border border-hi/[0.08] bg-hi/[0.03] pl-2.5 pr-0.5 font-mono text-2xs tabular text-ink">
                           {formatTime(time)}
-                          <button type="button" aria-label={`Remove ${formatTime(time)}`} className="ml-0.5 flex h-5 w-5 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-white/[0.08] hover:text-ink" onClick={() => setDraft({ ...draft, times: draft.times.filter((item) => item !== time) })}>
+                          <button type="button" aria-label={`Remove ${formatTime(time)}`} className="ml-0.5 flex h-5 w-5 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-hi/[0.08] hover:text-ink" onClick={() => setDraft({ ...draft, times: draft.times.filter((item) => item !== time) })}>
                             <X className="h-3 w-3" />
                           </button>
                         </span>
@@ -684,7 +684,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
 
                   <details>
                     <summary className="cursor-pointer px-3.5 py-2.5 text-xs text-ink-muted hover:text-ink">More settings</summary>
-                    <div className="divide-y divide-white/[0.06]">
+                    <div className="divide-y divide-hi/[0.06]">
                       <Row
                         label="Captions"
                         hint={draft.metadataMode === 'ai' ? 'Uses reviewed drafts first; otherwise AI writes the captions. Review TikTok captions before posting.' : undefined}
@@ -752,7 +752,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                     onClick={() => setBatchReview(selected.content.filter((item) => item.status === 'queued' && !item.metadataDraft && needsTikTokReview(selected, item)))}>Review all for TikTok ({counts.tiktok_review})</Button>}
                   <Button size="sm" icon={<Plus className="h-3 w-3" />} loading={busy === 'upload'} onClick={() => void mutate('upload', () => getApi().automations.addContent(selected.id), 'Clips added to the bank.')} disabled={Boolean(busy)}>Add clips</Button>
                 </div>
-                {selected.content.some((item) => item.status === 'queued' && !hasEnhancedMetadata(item, selected.accounts.length ? selected.accounts.map((account) => account.platform) : ['youtube'])) && <div className="border-t border-white/[0.06] px-3.5 py-3 flex flex-wrap items-center gap-3">
+                {selected.content.some((item) => item.status === 'queued' && !hasEnhancedMetadata(item, selected.accounts.length ? selected.accounts.map((account) => account.platform) : ['youtube'])) && <div className="border-t border-hi/[0.06] px-3.5 py-3 flex flex-wrap items-center gap-3">
                   <Button size="sm" icon={<Sparkles className="h-3.5 w-3.5" />} disabled={Boolean(busy) || dirty || !writingConfigured} loading={busy === 'group-sources'} onClick={() => void prepareEnhancementGroups()}>Enhance by source video</Button>
                   <span className="text-xs text-ink-subtle">Linked videos & attached files · shared context and research · uses OpenRouter credits{!selected.accounts.length ? ' · drafts for YouTube until accounts are selected' : ''}</span>
                 </div>}
@@ -772,7 +772,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                     <Button size="sm" disabled={Boolean(busy) || dirty} onClick={() => void enhanceQueued()}>Enhance {Math.min(30, activeSourceGroup?.contentIds.length ?? 0)} {activeSourceGroup?.contentIds.length === 1 ? 'clip' : 'clips'} from this video</Button>
                   </> : <p className="text-sm text-ink-muted">No queued clips need a new draft.</p>}
                 </div>}
-                {pickedIds.length > 0 && <div role="toolbar" aria-label="Move selected clips" className="flex flex-wrap items-center gap-1.5 border-t border-white/[0.06] bg-accent/[0.04] px-3.5 py-2">
+                {pickedIds.length > 0 && <div role="toolbar" aria-label="Move selected clips" className="flex flex-wrap items-center gap-1.5 border-t border-hi/[0.06] bg-accent/[0.04] px-3.5 py-2">
                   <span className="mr-1 text-xs text-ink">{pickedIds.length} selected</span>
                   <Button size="sm" variant="secondary" icon={<ChevronsUp className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'top')}>To top</Button>
                   <Button size="sm" variant="secondary" icon={<ArrowUp className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'up')}>Up</Button>
@@ -783,12 +783,12 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                 {bulkProgress && <Callout tone="info" className="mt-3" action={<Button size="sm" onClick={() => { stopBulk.current = true; setBulkProgress('Stopping after the current operation…') }}>Stop after batch</Button>}>{bulkProgress}</Callout>}
                 <DragDropContext key={selected.id} onBeforeCapture={() => { contentInteraction.current = true; refreshVersion.current++ }} onDragEnd={(result) => void moveContent(result)}>
                   {contentGroups.filter((group) => !['Needs attention', 'Held clips'].includes(group.label) || group.items.length > 0).map((group) => (
-                    <section key={group.label} aria-label={group.label} className="border-t border-white/[0.06]">
-                      <div className="flex flex-wrap items-center justify-between gap-2 bg-white/[0.02] px-3.5 py-2.5">
+                    <section key={group.label} aria-label={group.label} className="border-t border-hi/[0.06]">
+                      <div className="flex flex-wrap items-center justify-between gap-2 bg-hi/[0.02] px-3.5 py-2.5">
                         <h3 className="flex items-center gap-2 text-xs font-semibold text-ink-muted">
                           {group.label === 'Queued' && queueIds.length > 0 && <Checkbox checked={pickedIds.length === queueIds.length} indeterminate={pickedIds.length > 0 && pickedIds.length < queueIds.length}
                             onChange={() => setPicked(pickedIds.length === queueIds.length ? new Set() : new Set(queueIds))} label="Select all queued clips" />}
-                          {group.label}<span className="tabular rounded-full bg-white/[0.06] px-2 py-0.5 text-2xs">{group.items.length}</span></h3>
+                          {group.label}<span className="tabular rounded-full bg-hi/[0.06] px-2 py-0.5 text-2xs">{group.items.length}</span></h3>
                         {group.label === 'Queued' && <span role="status" aria-label="Next posting slot" className="ml-auto text-right text-2xs text-ink-muted">
                           {!nextSlot ? 'No times scheduled' : !selected.enabled ? 'Paused' : <>Next slot <span className="text-ink">{nextSlot}</span><span className="text-ink-subtle"> · {selected.timezone.replace(/_/g, ' ')}</span></>}
                         </span>}
@@ -796,7 +796,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                       {group.label === 'Held clips' && <p className="px-3.5 py-2 text-2xs text-ink-subtle">Warnings acknowledged. These clips stay out of the queue until you review and return them.</p>}
                       {group.items.length === 0 && <p className="px-3.5 py-4 text-xs text-ink-subtle">{group.empty}</p>}
                       <Droppable droppableId={group.label} isDropDisabled={group.label !== 'Queued' || reorderDisabled}>
-                        {(listProvided, listSnapshot) => <ul ref={listProvided.innerRef} {...listProvided.droppableProps} className={cn('divide-y divide-white/[0.06] transition-colors', listSnapshot.isDraggingOver && 'bg-accent/[0.035]')}>
+                        {(listProvided, listSnapshot) => <ul ref={listProvided.innerRef} {...listProvided.droppableProps} className={cn('divide-y divide-hi/[0.06] transition-colors', listSnapshot.isDraggingOver && 'bg-accent/[0.035]')}>
                           {group.items.map((item, index) => (
                             <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={reorderDisabled || !canReorderContent(item)}>
                               {(provided, snapshot) => <ContentRow
@@ -922,8 +922,8 @@ function AutomationTab({ automation, selected, onSelect }: { automation: Automat
       className={cn(
         'inline-flex h-7 max-w-[220px] items-center gap-1.5 rounded-full border px-2.5 text-xs transition-colors duration-150',
         selected
-          ? 'border-white/[0.16] bg-white/[0.1] font-medium text-ink'
-          : 'border-transparent text-ink-muted hover:bg-white/[0.05] hover:text-ink'
+          ? 'border-hi/[0.16] bg-hi/[0.1] font-medium text-ink'
+          : 'border-transparent text-ink-muted hover:bg-hi/[0.05] hover:text-ink'
       )}
     >
       <StatusDot tone={state.tone} pulse={state.tone === 'success' && selected} className="h-1.5 w-1.5 [&>span]:h-1.5 [&>span]:w-1.5" />
@@ -993,7 +993,7 @@ function ContentRow({ item, nextUp, tiktokReviewNeeded, tiktokSelected, onReview
   const problem = item.warningsAcknowledged ? null : item.error ?? (item.status === 'needs_review' ? 'Confirm whether this clip posted before running it again.' : null)
   const row = (
     <li ref={dragProvided.innerRef} {...dragProvided.draggableProps}
-      className={cn('group/row list-none px-3.5 py-2.5', editing && 'bg-white/[0.025]', dragging && 'rounded-xl bg-raised shadow-pop ring-1 ring-accent/40')}>
+      className={cn('group/row list-none px-3.5 py-2.5', editing && 'bg-hi/[0.025]', dragging && 'rounded-xl bg-raised shadow-pop ring-1 ring-accent/40')}>
       <div className="flex min-h-8 flex-wrap items-center gap-2">
         {canReorderContent(item) && <Checkbox checked={picked} onChange={onPick} label={`Select ${item.title}`} />}
         {canReorderContent(item) && <span role="button" tabIndex={-1} aria-disabled={!dragProvided.dragHandleProps} {...dragProvided.dragHandleProps} aria-label={`Reorder ${item.title}`} title="Drag to reorder. Or press Space, use arrow keys, then Space to drop; Escape to cancel." className={cn('touch-none rounded p-1 text-ink-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent', dragProvided.dragHandleProps ? 'cursor-grab hover:bg-fill-hover hover:text-ink active:cursor-grabbing' : 'cursor-default opacity-40')}><GripVertical className="h-3.5 w-3.5" /></span>}
@@ -1024,12 +1024,12 @@ function ContentRow({ item, nextUp, tiktokReviewNeeded, tiktokSelected, onReview
                 {(item.sourceContext?.title || item.metadataEnhancement?.source?.title) && <><dt>Source</dt><dd className="line-clamp-2 text-ink">{item.sourceContext?.title || item.metadataEnhancement?.source?.title}</dd></>}
               </dl>
               {item.caption && <p className="line-clamp-3 whitespace-pre-wrap text-ink-muted">{item.caption}</p>}
-              {((item.warningsAcknowledged && (item.error || item.metadataError)) || (item.metadataErrorAcknowledged && item.metadataError)) && <div className="space-y-1 border-t border-white/[0.08] pt-2 text-ink-subtle">
+              {((item.warningsAcknowledged && (item.error || item.metadataError)) || (item.metadataErrorAcknowledged && item.metadataError)) && <div className="space-y-1 border-t border-hi/[0.08] pt-2 text-ink-subtle">
                 <p className="font-medium">Acknowledged warnings</p>
                 {item.warningsAcknowledged && item.error && <p>{item.error}</p>}
                 {item.metadataError && <p>{item.metadataError}</p>}
               </div>}
-              {Boolean(item.generatedMetadata?.length) && <div className="space-y-1.5 border-t border-white/[0.08] pt-2">
+              {Boolean(item.generatedMetadata?.length) && <div className="space-y-1.5 border-t border-hi/[0.08] pt-2">
                 <p className="text-ink-muted">Prepared for {item.generatedMetadata?.map((post) => platformName(post.platform)).join(', ')}</p>
                 {item.generatedMetadata?.[0]?.tags.length ? <p className="line-clamp-2 text-ink-subtle">Tags: {item.generatedMetadata[0].tags.join(', ')}</p> : null}
               </div>}

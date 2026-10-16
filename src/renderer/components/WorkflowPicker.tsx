@@ -52,7 +52,7 @@ export function WorkflowPicker({ value, onChange, disabled }: {
                   {selected && <Check className="h-3 w-3" strokeWidth={3} />}
                 </span>
               </span>
-              <span id={`workflow-${option.id}-level`} className="mt-2 inline-flex self-start rounded-full bg-white/[0.06] px-2 py-0.5 text-2xs font-medium text-ink-muted">{option.level}</span>
+              <span id={`workflow-${option.id}-level`} className="mt-2 inline-flex self-start rounded-full bg-hi/[0.06] px-2 py-0.5 text-2xs font-medium text-ink-muted">{option.level}</span>
               <WorkflowIllustration key={`${option.id}-${selected ? selectionRevision : 0}`} workflow={option.id} selected={selected} animate={selected && selectionRevision > 0} />
               <span id={`workflow-${option.id}-description`} className="block flex-1">
                 <span className="block text-xs font-medium text-ink">{option.outcome}</span>

@@ -23,7 +23,7 @@ export function UserMessage({ message }: { message: AssistantMessage }): React.J
   const text = message.parts.map((part) => part.text ?? '').join('')
   return (
     <div className="flex justify-end">
-      <div className="max-w-[min(82%,560px)] whitespace-pre-wrap rounded-3xl rounded-br-md bg-white/[0.08] px-4 py-2.5 text-base leading-relaxed text-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)] [overflow-wrap:anywhere]">
+      <div className="max-w-[min(82%,560px)] whitespace-pre-wrap rounded-3xl rounded-br-md bg-hi/[0.08] px-4 py-2.5 text-base leading-relaxed text-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)] [overflow-wrap:anywhere]">
         {text}
       </div>
     </div>
@@ -112,7 +112,7 @@ function ToolGroup({ tools }: { tools: AssistantToolCall[] }): React.JSX.Element
           aria-expanded={expanded}
           disabled={active}
           onClick={() => setOpen(!open)}
-          className="flex h-9 w-full items-center gap-2.5 px-3 text-left text-xs text-ink-muted transition-colors duration-150 enabled:hover:bg-white/[0.04] enabled:hover:text-ink disabled:cursor-default"
+          className="flex h-9 w-full items-center gap-2.5 px-3 text-left text-xs text-ink-muted transition-colors duration-150 enabled:hover:bg-hi/[0.04] enabled:hover:text-ink disabled:cursor-default"
         >
           <Wrench aria-hidden className="h-3.5 w-3.5 shrink-0 text-ink-subtle" />
           <span className="font-medium">{active ? `Working through ${tools.length} actions` : `Took ${tools.length} actions`}</span>
@@ -121,7 +121,7 @@ function ToolGroup({ tools }: { tools: AssistantToolCall[] }): React.JSX.Element
         </button>
       )}
       {expanded && (
-        <ul className={cn('divide-y divide-white/[0.05]', foldable && 'border-t border-white/[0.06]')}>
+        <ul className={cn('divide-y divide-hi/[0.05]', foldable && 'border-t border-hi/[0.06]')}>
           {tools.map((tool) => {
             const status = TOOL_STATUS[tool.status]
             return (

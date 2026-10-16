@@ -6,7 +6,7 @@ import { Button } from './ui/Button'
 /**
  * Mirrors the caption presets in engine/clip_engine/config.py closely
  * enough to preview them: typeface, colours, stroke, shadow, glow, pill,
- * plate and karaoke sweep. BridgeClip engine renders with its bundled fonts; the preview
+ * plate and karaoke sweep. MerveilleClip engine renders with its bundled fonts; the preview
  * uses the same bundled faces, with a system fallback while they load.
  */
 interface CaptionPreset {
@@ -393,7 +393,7 @@ function CaptionMotionPreview({ preset, disabled }: { preset: CaptionPreset; dis
   }
 
   return (
-    <section aria-label="Caption preview" className="mb-3 overflow-hidden rounded-xl border border-white/[0.08]" style={{ background: SCENE }}>
+    <section aria-label="Caption preview" className="mb-3 overflow-hidden rounded-xl border border-hi/[0.08]" style={{ background: SCENE }}>
       <div className="flex items-center justify-between gap-2 px-3 pt-3 text-xs">
         <span className="font-semibold text-ink">{preset.name} preview</span>
         <span className="text-2xs text-ink-subtle">Sample timing · No audio</span>
@@ -432,7 +432,7 @@ function CaptionMotionPreview({ preset, disabled }: { preset: CaptionPreset; dis
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2 border-t border-white/[0.06] px-2 py-2">
+      <div className="flex items-center gap-2 border-t border-hi/[0.06] px-2 py-2">
         <Button size="sm" variant="ghost" iconOnly disabled={disabled} aria-label={playing && !disabled ? 'Pause caption preview' : 'Play caption preview'} icon={playing && !disabled ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />} onClick={() => setPlaying((value) => !value)} />
         <Button size="sm" variant="ghost" iconOnly disabled={disabled} aria-label="Replay caption preview" icon={<RotateCcw className="h-3.5 w-3.5" />} onClick={() => { seek(0); setPlaying(true) }} />
         <input type="range" aria-label="Caption preview position" aria-valuetext={`${(time / 1000).toFixed(1)} seconds`} min={0} max={PREVIEW_MS} step={100} value={time} disabled={disabled} className="min-w-0 flex-1 accent-accent" onChange={(event) => { setPlaying(false); seek(Number(event.target.value)) }} />

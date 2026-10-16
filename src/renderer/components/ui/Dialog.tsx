@@ -50,7 +50,7 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(function Dialog(
 /** Footer bar for a dialog: actions right-aligned on a slightly darker strip. */
 export function DialogFooter({ className, children }: { className?: string; children: ReactNode }): React.JSX.Element {
   return (
-    <div className={cn('flex items-center justify-end gap-2 border-t border-white/[0.07] bg-black/20 px-4 py-3', className)}>
+    <div className={cn('flex items-center justify-end gap-2 border-t border-hi/[0.07] bg-black/20 px-4 py-3', className)}>
       {children}
     </div>
   )

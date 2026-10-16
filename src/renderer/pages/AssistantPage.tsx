@@ -27,7 +27,7 @@ const STARTERS = [
 /** The reading column shared by messages and the composer. */
 const COLUMN = 'mx-auto w-full max-w-[760px] px-4 sm:px-6'
 
-/** Chat with BridgeClip through the user's own Claude Code or Codex. */
+/** Chat with MerveilleClip through the user's own Claude Code or Codex. */
 export function AssistantPage({ onOpenSettings }: { onOpenSettings: (section?: 'assistant' | 'keys') => void }): React.JSX.Element {
   const store = useAssistantStore()
   const { conversation, activeId, running, approvals, statuses, preferences, draft, sending, error, conversations } = store
@@ -74,7 +74,7 @@ export function AssistantPage({ onOpenSettings }: { onOpenSettings: (section?: '
   }
   const confirmDelete = (chat: Pick<AssistantConversationSummary, 'id' | 'title'>): void => setConfirm({
     title: 'Delete this chat?',
-    body: <>“{chat.title}” is removed from BridgeClip. Anything the assistant already did (clips, posts, automations) stays.</>,
+    body: <>“{chat.title}” is removed from MerveilleClip. Anything the assistant already did (clips, posts, automations) stays.</>,
     confirmLabel: 'Delete chat',
     onConfirm: () => void store.remove(chat.id)
   })
@@ -99,7 +99,7 @@ export function AssistantPage({ onOpenSettings }: { onOpenSettings: (section?: '
         !checked ? 'Checking your assistants…'
           : !connected.length ? 'Connect Claude, OpenAI or OpenRouter to chat'
             : needsRouterModel ? 'Choose an OpenRouter model below to start'
-              : conversation ? 'Reply to BridgeClip…' : 'Ask BridgeClip to clip, post or organize…'
+              : conversation ? 'Reply to MerveilleClip…' : 'Ask MerveilleClip to clip, post or organize…'
       }
       picker={(
         <ModelMenu
@@ -138,7 +138,7 @@ export function AssistantPage({ onOpenSettings }: { onOpenSettings: (section?: '
       />
 
       <section aria-label="Conversation" className="flex min-w-0 flex-1 flex-col">
-        <header className={cn('flex h-11 shrink-0 items-center gap-1 px-3 sm:px-4', conversation ? 'border-b border-white/[0.06]' : 'lg:hidden')}>
+        <header className={cn('flex h-11 shrink-0 items-center gap-1 px-3 sm:px-4', conversation ? 'border-b border-hi/[0.06]' : 'lg:hidden')}>
           <div className="lg:hidden">
             <ActionMenu label="Recent chats" icon={<History className="h-4 w-4" />} actions={history} disabled={history.length === 0} />
           </div>
@@ -223,7 +223,7 @@ export function AssistantPage({ onOpenSettings }: { onOpenSettings: (section?: '
                         input?.focus()
                         input?.setSelectionRange(prompt.length, prompt.length)
                       }}
-                      className="flex h-8 items-center gap-2 rounded-full bg-white/[0.04] px-3.5 text-xs text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors duration-150 enabled:hover:bg-white/[0.08] enabled:hover:text-ink disabled:opacity-50"
+                      className="flex h-8 items-center gap-2 rounded-full bg-hi/[0.04] px-3.5 text-xs text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors duration-150 enabled:hover:bg-hi/[0.08] enabled:hover:text-ink disabled:opacity-50"
                     >
                       <Icon aria-hidden className="h-3.5 w-3.5 text-ink-subtle" />
                       {title}
@@ -273,7 +273,7 @@ function Composer({ inputRef, draft, onDraft, onSubmit, onStop, busy, sending, c
       <textarea
         ref={inputRef}
         autoFocus
-        aria-label="Message BridgeClip"
+        aria-label="Message MerveilleClip"
         rows={1}
         maxLength={ASSISTANT_PROMPT_MAX_CHARS}
         value={draft}

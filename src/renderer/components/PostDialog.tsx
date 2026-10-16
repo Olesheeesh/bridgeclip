@@ -598,7 +598,7 @@ export function PostDialog({ clips, onClose, onNavigate }: PostDialogProps): Rea
 
   return (
     <Dialog ref={dialogRef} aria-labelledby={titleId} onBackdropMouseDown={close} panelClassName="max-w-[640px]">
-      <div className="relative flex items-start gap-3 border-b border-white/[0.07] px-4 py-4">
+      <div className="relative flex items-start gap-3 border-b border-hi/[0.07] px-4 py-4">
         <ClipPreview path={clip.path} thumb={thumb} vertical={media ? (media.height ?? 0) > (media.width ?? 0) : true} />
         <div className="relative min-w-0 flex-1 pt-0.5">
           <p className="eyebrow">{clips.length > 1 ? `Post clip ${index + 1} of ${clips.length}` : 'Post clip'}</p>
@@ -606,9 +606,9 @@ export function PostDialog({ clips, onClose, onNavigate }: PostDialogProps): Rea
             {clip.title}
           </h2>
           <p className="mt-2 flex flex-wrap gap-1.5 font-mono text-2xs tabular text-ink-muted">
-            <span className="rounded-full bg-white/[0.06] px-2 py-0.5">{media?.durationMs != null ? formatClipDuration(media.durationMs / 1000) : '–:––'}</span>
-            {media?.width && media.height ? <span className="rounded-full bg-white/[0.06] px-2 py-0.5">{media.width}×{media.height}</span> : null}
-            {media && media.sizeBytes > 0 ? <span className="rounded-full bg-white/[0.06] px-2 py-0.5">{formatBytes(media.sizeBytes)}</span> : null}
+            <span className="rounded-full bg-hi/[0.06] px-2 py-0.5">{media?.durationMs != null ? formatClipDuration(media.durationMs / 1000) : '–:––'}</span>
+            {media?.width && media.height ? <span className="rounded-full bg-hi/[0.06] px-2 py-0.5">{media.width}×{media.height}</span> : null}
+            {media && media.sizeBytes > 0 ? <span className="rounded-full bg-hi/[0.06] px-2 py-0.5">{formatBytes(media.sizeBytes)}</span> : null}
           </p>
         </div>
         <Button variant="ghost" size="sm" iconOnly aria-label="Close" onClick={close} disabled={sending || metadataBusy} className="relative" icon={<X className="h-4 w-4" />} />
@@ -617,7 +617,7 @@ export function PostDialog({ clips, onClose, onNavigate }: PostDialogProps): Rea
       <div className="min-h-0 flex-1 overflow-y-auto">{body}</div>
 
       {showForm && (
-        <div className="border-t border-white/[0.07] bg-black/20 px-4 py-3">
+        <div className="border-t border-hi/[0.07] bg-black/20 px-4 py-3">
           {error && (
             <Callout tone="danger" className="mb-3">
               {error}
@@ -712,7 +712,7 @@ function ClipPreview({ path, thumb, vertical }: { path: string; thumb: string | 
       onClick={toggle}
       aria-label={playing ? 'Pause preview' : 'Play preview'}
       className={cn(
-        'group relative shrink-0 overflow-hidden rounded-xl bg-black shadow-[0_10px_28px_-10px_rgb(0_0_0/0.8)] ring-1 ring-white/[0.12]',
+        'group relative shrink-0 overflow-hidden rounded-xl bg-black shadow-[0_10px_28px_-10px_rgb(0_0_0/0.8)] ring-1 ring-hi/[0.12]',
         vertical ? 'h-[112px] w-[63px]' : 'h-[63px] w-[112px]'
       )}
     >
@@ -771,7 +771,7 @@ function CaptionField({ caption, onChange, problems }: { caption: string; onChan
   return (
     <Section
       title={<label htmlFor={id}>Caption</label>}
-      aside={<span className="rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-2xs tabular text-ink-subtle">{length.toLocaleString('en-US')}</span>}
+      aside={<span className="rounded-full bg-hi/[0.06] px-2 py-0.5 font-mono text-2xs tabular text-ink-subtle">{length.toLocaleString('en-US')}</span>}
     >
       <TextArea
         id={id}
@@ -915,7 +915,7 @@ function AccountPicker({ accounts, selected, onChange, profileName, reasonFor }:
           const allOn = choosable.length > 0 && choosable.every((id) => selected.includes(id))
           const grouped = members.length > 1
           return (
-            <div key={platform} className="border-white/[0.06] [&:not(:last-child)]:mb-1.5 [&:not(:last-child)]:border-b [&:not(:last-child)]:pb-1.5">
+            <div key={platform} className="border-hi/[0.06] [&:not(:last-child)]:mb-1.5 [&:not(:last-child)]:border-b [&:not(:last-child)]:pb-1.5">
               {grouped && (
                 <div className="flex items-center gap-3 px-2.5 pb-1 pt-2">
                   <PlatformIcon platform={platform} className="h-8 w-8" />
@@ -977,7 +977,7 @@ function AccountRow({ account, grouped, profile, reason, selected, onToggle }: {
         'flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-[background,box-shadow] duration-150',
         selected
           ? 'bg-accent/[0.12] shadow-[inset_0_0_0_1px_rgb(var(--accent)/0.3)]'
-          : 'hover:bg-white/[0.05]',
+          : 'hover:bg-hi/[0.05]',
         dimmed && 'cursor-not-allowed hover:bg-transparent'
       )}
     >
@@ -1040,7 +1040,7 @@ export function TikTokAccountFields({ heading, state, value, onChange, brandedCo
           </p>
         )}
         {businessConnection && (
-          <p className="rounded-xl bg-white/[0.04] px-3.5 py-2.5 text-xs leading-relaxed text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+          <p className="rounded-xl bg-hi/[0.04] px-3.5 py-2.5 text-xs leading-relaxed text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
             {draft
               ? 'Choose the audience when you finish posting this video from your TikTok inbox.'
               : 'Direct video posts from this TikTok Business connection are public. Choose Everyone, or send to your TikTok inbox to set a different audience in TikTok.'}
@@ -1103,7 +1103,7 @@ export function TikTokSharedFields({ value, onChange, commercialTypes }: { value
 
   return (
     <>
-      <div className="space-y-3.5 border-t border-white/[0.07] pt-3">
+      <div className="space-y-3.5 border-t border-hi/[0.07] pt-3">
         <SwitchRow
           checked={value.disclose}
           onChange={(disclose) => set({ disclose, ...(disclose ? {} : { yourBrand: false, brandedContent: false }), consent: false })}
@@ -1111,7 +1111,7 @@ export function TikTokSharedFields({ value, onChange, commercialTypes }: { value
           description="Turn on if this video promotes you, a brand, a product or a service."
         />
         {value.disclose && (
-          <div className="space-y-2.5 rounded-xl bg-white/[0.03] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)]">
+          <div className="space-y-2.5 rounded-xl bg-hi/[0.03] p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)]">
             {canBrand && (
               <CheckRow checked={value.yourBrand} onChange={(yourBrand) => set({ yourBrand })} label="Your brand" description="You’re promoting yourself or your own business." />
             )}
@@ -1229,7 +1229,7 @@ function WhenField({ mode, onModeChange, value, onValueChange, min, max, problem
           {problem ? (
             <p role="alert" className="mt-2 text-xs text-danger">{problem}</p>
           ) : (
-            <p className="mt-2 text-xs leading-relaxed text-ink-subtle">Zernio publishes it at this time, even when BridgeClip is closed. Up to 6½ days ahead, because Zernio keeps uploads for 7 days.</p>
+            <p className="mt-2 text-xs leading-relaxed text-ink-subtle">Zernio publishes it at this time, even when MerveilleClip is closed. Up to 6½ days ahead, because Zernio keeps uploads for 7 days.</p>
           )}
         </div>
       )}
@@ -1283,7 +1283,7 @@ function ResultView({ result }: { result: PostClipResult }): React.JSX.Element {
       </div>
 
       {post && (
-        <ul className="glass-well mt-4 divide-y divide-white/[0.06] overflow-hidden rounded-2xl">
+        <ul className="glass-well mt-4 divide-y divide-hi/[0.06] overflow-hidden rounded-2xl">
           {post.targets.map((target, i) => {
             const badge = targetBadge(target, post.status)
             return (

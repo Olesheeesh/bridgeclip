@@ -21,7 +21,7 @@ function RichText({ text }: { text: string }): React.JSX.Element {
     <>
       {parseChangelogText(text).map((part, index) =>
         part.kind === 'strong' ? <strong key={index} className="font-medium text-ink">{part.text}</strong>
-          : part.kind === 'code' ? <code key={index} className="rounded bg-white/[0.06] px-1 font-mono text-[0.85em] text-ink">{part.text}</code>
+          : part.kind === 'code' ? <code key={index} className="rounded bg-hi/[0.06] px-1 font-mono text-[0.85em] text-ink">{part.text}</code>
             : part.text
       )}
     </>
@@ -82,7 +82,7 @@ export function ChangelogDialog({ onClose }: { onClose: () => void }): React.JSX
 
   return (
     <Dialog ref={panelRef} aria-labelledby={titleId} onBackdropMouseDown={onClose} panelClassName="h-[min(680px,85dvh)] max-w-[640px]">
-      <header className="flex shrink-0 items-center gap-3 border-b border-white/[0.07] px-5 py-4">
+      <header className="flex shrink-0 items-center gap-3 border-b border-hi/[0.07] px-5 py-4">
         <IconTile><History /></IconTile>
         <div className="min-w-0 flex-1">
           <h2 id={titleId} className="text-base font-semibold text-ink">Changelog</h2>
@@ -94,7 +94,7 @@ export function ChangelogDialog({ onClose }: { onClose: () => void }): React.JSX
         ref={bodyRef}
         tabIndex={0}
         aria-label="Changes by version"
-        className="min-h-0 flex-1 divide-y divide-white/[0.06] overflow-y-auto px-5 py-5 outline-none"
+        className="min-h-0 flex-1 divide-y divide-hi/[0.06] overflow-y-auto px-5 py-5 outline-none"
         data-selectable
       >
         {RELEASES.length > 0

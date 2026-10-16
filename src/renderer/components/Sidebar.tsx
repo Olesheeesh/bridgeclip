@@ -43,7 +43,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps): React.JSX.El
     <aside
       id="sidebar"
       className={cn(
-        'no-drag relative flex shrink-0 flex-col overflow-hidden border-r border-white/[0.06] transition-[width] duration-200 ease-out',
+        'no-drag relative flex shrink-0 flex-col overflow-hidden border-r border-hi/[0.06] transition-[width] duration-200 ease-out',
         expanded ? 'w-[200px]' : 'w-[72px]'
       )}
     >
@@ -67,7 +67,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps): React.JSX.El
             <NavButton key={item.id} item={item} expanded={expanded} active={currentPage === item.id} onNavigate={onNavigate} />
           ))}
         </NavGroup>
-        <NavGroup label="Workspace" expanded={expanded} className={cn('mt-4', !expanded && 'mx-2 border-t border-white/[0.06] pt-3 [&>div]:-mx-2')}>
+        <NavGroup label="Workspace" expanded={expanded} className={cn('mt-4', !expanded && 'mx-2 border-t border-hi/[0.06] pt-3 [&>div]:-mx-2')}>
           {NAV_ITEMS.filter((item) => item.group === 'app').map((item) => (
             <NavButton key={item.id} item={item} expanded={expanded} active={currentPage === item.id} onNavigate={onNavigate} />
           ))}
@@ -108,7 +108,7 @@ function SidebarToggle({ rail = false }: { rail?: boolean }): React.JSX.Element 
       aria-controls="sidebar"
       title={hint}
       className={cn(
-        'group/toggle relative flex shrink-0 items-center justify-center text-ink-subtle transition-colors duration-150 hover:bg-white/[0.07] hover:text-ink',
+        'group/toggle relative flex shrink-0 items-center justify-center text-ink-subtle transition-colors duration-150 hover:bg-hi/[0.07] hover:text-ink',
         rail ? 'h-9 w-9 rounded-xl' : 'h-7 w-7 rounded-lg'
       )}
     >
@@ -154,8 +154,8 @@ function NavButton({ item, expanded, active, onNavigate }: {
         'group relative flex w-full items-center gap-2.5 text-sm transition-[background,color,box-shadow] duration-200 ease-out',
         expanded ? 'h-8 justify-start rounded-full px-3' : 'h-9 justify-center rounded-xl',
         active
-          ? 'bg-white/[0.1] font-medium text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.16),inset_0_0_0_1px_rgb(255_255_255/0.08)]'
-          : 'text-ink-muted hover:bg-white/[0.05] hover:text-ink'
+          ? 'bg-hi/[0.1] font-medium text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.16),inset_0_0_0_1px_rgb(255_255_255/0.08)]'
+          : 'text-ink-muted hover:bg-hi/[0.05] hover:text-ink'
       )}
     >
       <Icon
@@ -241,7 +241,7 @@ function SetupStatus({ expanded, onOpenSettings }: { expanded: boolean; onOpenSe
       aria-label={label}
       title={expanded ? undefined : label}
       className={cn(
-        'flex h-8 min-w-0 items-center gap-2 rounded-full text-xs transition-colors hover:bg-white/[0.06]',
+        'flex h-8 min-w-0 items-center gap-2 rounded-full text-xs transition-colors hover:bg-hi/[0.06]',
         expanded ? 'flex-1 justify-start px-3' : 'w-9 justify-center',
         ready ? 'text-ink-subtle hover:text-ink-muted' : 'text-ink-muted hover:text-ink'
       )}

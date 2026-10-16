@@ -28,7 +28,7 @@ export function OutputStorage({ outputDirectory }: { outputDirectory: string }):
         try {
           const storageUsage = getApi().settings.storageUsage
           if (typeof storageUsage !== 'function') {
-            if (!cancelled) setFailure('Restart BridgeClip to load the storage display.')
+            if (!cancelled) setFailure('Restart MerveilleClip to load the storage display.')
             return
           }
           const result = await storageUsage(refresh > 0)
@@ -47,7 +47,7 @@ export function OutputStorage({ outputDirectory }: { outputDirectory: string }):
   }, [outputDirectory, refresh])
 
   return (
-    <section aria-label="Content storage" className="mt-4 border-t border-white/[0.06] pt-4">
+    <section aria-label="Content storage" className="mt-4 border-t border-hi/[0.06] pt-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-sm font-medium text-ink">
           <HardDrive aria-hidden className="h-4 w-4 text-ink-muted" />

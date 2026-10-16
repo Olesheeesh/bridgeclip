@@ -1,6 +1,6 @@
 import { JevSettings } from '../components/JevSettings'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowUpRight, BookA, Check, ChevronDown, Cpu, FolderOpen, Github, History, Info, KeyRound, Loader2, RefreshCw, ScrollText, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { ArrowUpRight, BookA, Check, ChevronDown, Cpu, FolderOpen, Github, History, Info, KeyRound, Loader2, Palette, RefreshCw, ScrollText, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { useSettingsStore } from '../store/use-settings-store'
 import { useChangelogStore } from '../store/use-changelog-store'
 import { useApiKeyDrafts } from '../hooks/use-api-key-drafts'
@@ -23,8 +23,9 @@ import { OutputStorage } from '../components/OutputStorage'
 import { AssistantSettings } from '../components/assistant/AssistantSettings'
 import { useAssistantStore } from '../store/use-assistant-store'
 import { takeSettingsSection } from '../lib/settings-focus'
+import { APP_THEMES, saveTheme, storedTheme, type AppTheme } from '../lib/theme'
 
-type SectionId = 'keys' | 'assistant' | 'jev' | 'vocabulary' | 'output' | 'system' | 'about'
+type SectionId = 'keys' | 'assistant' | 'jev' | 'vocabulary' | 'output' | 'appearance' | 'system' | 'about'
 type SectionTone = 'success' | 'warning' | 'danger' | 'idle'
 
 /** `showUpdates` changes each time Help → Check for Updates… asks for the Updates row. */
@@ -66,6 +67,7 @@ export function SettingsPage({ showUpdates = 0 }: { showUpdates?: number }): Rea
     { id: 'jev', label: 'TypeSafe Jev', icon: <SlidersHorizontal />, tone: 'idle' },
     { id: 'vocabulary', label: 'Vocabulary', icon: <BookA />, tone: 'idle' },
     { id: 'output', label: 'Output', icon: <FolderOpen />, tone: 'idle' },
+    { id: 'appearance', label: 'Appearance', icon: <Palette />, tone: 'idle' },
     { id: 'system', label: 'System check', icon: <Cpu />, tone: !toolsChecked ? 'idle' : toolsMissing ? 'danger' : 'success' },
     { id: 'about', label: 'About', icon: <Info />, tone: 'idle' }
   ]
@@ -110,7 +112,7 @@ export function SettingsPage({ showUpdates = 0 }: { showUpdates?: number }): Rea
               aria-current={active === section.id ? 'true' : undefined}
               className={cn(
                 'flex h-8 w-full items-center gap-2.5 rounded-full px-3 text-left text-sm transition-colors duration-150 [&_svg]:h-3.5 [&_svg]:w-3.5',
-                active === section.id ? 'bg-white/[0.09] text-ink' : 'text-ink-muted hover:bg-white/[0.05] hover:text-ink'
+                active === section.id ? 'bg-hi/[0.09] text-ink' : 'text-ink-muted hover:bg-hi/[0.05] hover:text-ink'
               )}
             >
               {section.icon}
@@ -153,7 +155,7 @@ export function SettingsPage({ showUpdates = 0 }: { showUpdates?: number }): Rea
             <PanelHeader
               icon={<IconTile tone="accent"><KeyRound /></IconTile>}
               title="API keys"
-              description="Encrypted with your system keychain. BridgeClip has no account and no server of its own."
+              description="Encrypted with your system keychain. MerveilleClip has no account and no server of its own."
             />
             <div className="mt-4 space-y-2">
               <KeyRow>
@@ -218,11 +220,20 @@ export function SettingsPage({ showUpdates = 0 }: { showUpdates?: number }): Rea
             <OutputFolder value={outputDirectory} onCommit={(dir) => commit({ outputDirectory: dir })} />
           </Section>
 
+          <Section id="appearance">
+            <PanelHeader
+              icon={<IconTile><Palette /></IconTile>}
+              title="Appearance"
+              description="Colour theme for this computer. Changes apply right away."
+            />
+            <ThemePicker />
+          </Section>
+
           <Section id="system">
             <PanelHeader
               icon={<IconTile tone={toolsChecked && toolsMissing ? 'danger' : 'neutral'}><Cpu /></IconTile>}
               title="System check"
-              description="Tools BridgeClip needs to download, transcribe and cut video."
+              description="Tools MerveilleClip needs to download, transcribe and cut video."
               action={
                 <Button
                   size="sm"
@@ -237,7 +248,7 @@ export function SettingsPage({ showUpdates = 0 }: { showUpdates?: number }): Rea
             <ToolList rows={tools} checking={checkingTools} />
             {toolError && <Callout tone="danger" className="mt-3">{toolError}</Callout>}
             {!isPackaged && (
-              <div className="mt-4 grid gap-4 border-t border-white/[0.06] pt-4">
+              <div className="mt-4 grid gap-4 border-t border-hi/[0.06] pt-4">
                 <DevPathField
                   label="Python path"
                   value={pythonPath}
@@ -303,6 +314,46 @@ export function SettingsPage({ showUpdates = 0 }: { showUpdates?: number }): Rea
         </div>
       </div>
     </Page>
+  )
+}
+
+/** Fork: one large target per theme, with its colours shown, so a single click switches. */
+function ThemePicker(): React.JSX.Element {
+  const [theme, setTheme] = useState<AppTheme>(storedTheme)
+  const choose = (next: AppTheme): void => {
+    saveTheme(next)
+    setTheme(next)
+  }
+  return (
+    <div role="radiogroup" aria-label="Colour theme" className="mt-4 grid gap-3 sm:grid-cols-3">
+      {APP_THEMES.map((option) => {
+        const selected = option.id === theme
+        return (
+          <button
+            key={option.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => choose(option.id)}
+            className={cn(
+              'glass-tile glass-tile-hover flex min-h-[88px] flex-col gap-3 rounded-xl p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+              selected && 'glass-selected'
+            )}
+          >
+            <span className="flex items-center gap-1.5" aria-hidden>
+              {option.swatches.map((colour) => (
+                <span key={colour} className="h-5 w-5 rounded-full border border-hi/[0.16]" style={{ background: colour }} />
+              ))}
+              {selected && <Check className="ml-auto h-4 w-4 text-accent" />}
+            </span>
+            <span>
+              <span className="block text-sm font-semibold text-ink">{option.label}{option.id === 'classic' ? ' (default)' : ''}</span>
+              <span className="block text-xs text-ink-muted">{option.description}</span>
+            </span>
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -507,7 +558,7 @@ function toolRows(status: ToolStatus | null): ToolRow[] {
     },
     { name: 'FFprobe', ok: status?.ffprobe ?? null },
     { name: 'yt-dlp', ok: status?.ytdlp ?? null, detail: 'Downloads YouTube videos and Twitch VODs' },
-    { name: 'BridgeClip clipping engine', ok: status?.engine ?? null, detail: status?.enginePath },
+    { name: 'MerveilleClip clipping engine', ok: status?.engine ?? null, detail: status?.enginePath },
     { name: 'Bridge runner', ok: status?.bridgeRunner ?? null, detail: status?.bridgePath }
   ]
 }
@@ -524,7 +575,7 @@ function ToolList({ rows, checking }: { rows: ToolRow[]; checking: boolean }): R
         <div className="mb-3 flex items-center gap-2 px-1 text-xs">
           <StatusDot tone={missing > 0 ? 'danger' : 'success'} />
           <span className={cn('flex-1', missing > 0 ? 'text-danger' : 'text-ink-muted')}>
-            {missing > 0 ? `${missing} required check${missing === 1 ? '' : 's'} need${missing === 1 ? 's' : ''} attention` : `Everything BridgeClip needs is installed (${rows.filter((row) => row.ok).length} tools)`}
+            {missing > 0 ? `${missing} required check${missing === 1 ? '' : 's'} need${missing === 1 ? 's' : ''} attention` : `Everything MerveilleClip needs is installed (${rows.filter((row) => row.ok).length} tools)`}
           </span>
           {missing === 0 && (
             <Button
@@ -539,7 +590,7 @@ function ToolList({ rows, checking }: { rows: ToolRow[]; checking: boolean }): R
           )}
         </div>
       )}
-      {(!checked || missing > 0 || expanded) && <div className="glass-well divide-y divide-white/[0.05] overflow-hidden rounded-2xl animate-fade-in">
+      {(!checked || missing > 0 || expanded) && <div className="glass-well divide-y divide-hi/[0.05] overflow-hidden rounded-2xl animate-fade-in">
         {rows.map((row) => {
           const tone = row.ok == null ? 'idle' : row.ok ? 'success' : row.optional ? 'warning' : 'danger'
           return (

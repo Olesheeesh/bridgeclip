@@ -216,7 +216,7 @@ export function ModelMenu({ provider, models, statuses, onChoose, onConnect }: {
         'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors duration-100',
         'focus:outline-none focus-visible:outline-none disabled:opacity-40',
         checked ? 'text-ink' : 'text-ink-muted',
-        'enabled:hover:bg-white/[0.08] enabled:hover:text-ink focus:bg-white/[0.08] focus:text-ink'
+        'enabled:hover:bg-hi/[0.08] enabled:hover:text-ink focus:bg-hi/[0.08] focus:text-ink'
       )}
     >
       <span className="min-w-0 flex-1 truncate">{label}</span>
@@ -245,8 +245,8 @@ export function ModelMenu({ provider, models, statuses, onChoose, onConnect }: {
         }}
         className={cn(
           'flex h-8 min-w-0 max-w-[260px] items-center gap-2 rounded-full pl-2 pr-2.5 text-xs font-medium text-ink',
-          'bg-white/[0.05] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors duration-150',
-          'hover:bg-white/[0.09] aria-expanded:bg-white/[0.1]'
+          'bg-hi/[0.05] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors duration-150',
+          'hover:bg-hi/[0.09] aria-expanded:bg-hi/[0.1]'
         )}
       >
         {provider
@@ -271,7 +271,7 @@ export function ModelMenu({ provider, models, statuses, onChoose, onConnect }: {
           className={cn(MENU_SURFACE, 'fixed inset-auto z-[120] m-0 w-[340px] max-w-[calc(100vw-16px)] border-0 p-0 animate-menu-in')}
           style={{ top: -9999, left: -9999 }}
         >
-          <div role="tablist" aria-label="Provider" className="flex gap-1 border-b border-white/[0.07] p-1.5">
+          <div role="tablist" aria-label="Provider" className="flex gap-1 border-b border-hi/[0.07] p-1.5">
             {ASSISTANT_PROVIDERS.map((providerId) => {
               const selected = providerId === tab
               const ready = statuses[providerId]?.state === 'connected'
@@ -290,7 +290,7 @@ export function ModelMenu({ provider, models, statuses, onChoose, onConnect }: {
                   className={cn(
                     'relative flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors duration-150',
                     'focus:outline-none focus-visible:shadow-[inset_0_0_0_1.5px_rgb(var(--accent)/0.75)]',
-                    selected ? 'bg-white/[0.1] text-ink' : 'text-ink-muted hover:bg-white/[0.05] hover:text-ink'
+                    selected ? 'bg-hi/[0.1] text-ink' : 'text-ink-muted hover:bg-hi/[0.05] hover:text-ink'
                   )}
                 >
                   <ProviderLogo provider={providerId} className="h-3.5 w-3.5 shrink-0" />
@@ -308,7 +308,7 @@ export function ModelMenu({ provider, models, statuses, onChoose, onConnect }: {
                 <button
                   type="button"
                   onClick={() => { close(); onConnect(tab) }}
-                  className="h-6 shrink-0 rounded-full bg-white/[0.07] px-2.5 text-2xs font-medium text-ink hover:bg-white/[0.12] focus:bg-white/[0.12] focus:outline-none"
+                  className="h-6 shrink-0 rounded-full bg-hi/[0.07] px-2.5 text-2xs font-medium text-ink hover:bg-hi/[0.12] focus:bg-hi/[0.12] focus:outline-none"
                 >
                   {tab === 'openrouter' ? 'Add key' : 'Connect'}
                 </button>
@@ -347,7 +347,7 @@ export function ModelMenu({ provider, models, statuses, onChoose, onConnect }: {
                   {catalogError && !routerModels.length && (
                     <div className="flex items-center gap-2 px-2.5 py-2 text-2xs text-ink-muted">
                       <span className="min-w-0 flex-1">{catalogError}</span>
-                      <button type="button" onClick={() => void load(true)} className="flex h-6 items-center gap-1 rounded-full bg-white/[0.07] px-2 text-ink hover:bg-white/[0.12]">
+                      <button type="button" onClick={() => void load(true)} className="flex h-6 items-center gap-1 rounded-full bg-hi/[0.07] px-2 text-ink hover:bg-hi/[0.12]">
                         <RefreshCw aria-hidden className="h-3 w-3" /> Retry
                       </button>
                     </div>
@@ -372,8 +372,8 @@ export function ModelMenu({ provider, models, statuses, onChoose, onConnect }: {
               )}
             </div>
             {tab === 'openrouter' && (
-              <p className="border-t border-white/[0.06] px-2.5 pb-1 pt-2 text-2xs text-ink-subtle">
-                Models that can use BridgeClip’s tools. Prices per million tokens, in / out, billed by OpenRouter.
+              <p className="border-t border-hi/[0.06] px-2.5 pb-1 pt-2 text-2xs text-ink-subtle">
+                Models that can use MerveilleClip’s tools. Prices per million tokens, in / out, billed by OpenRouter.
               </p>
             )}
           </div>

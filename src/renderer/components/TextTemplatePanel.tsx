@@ -77,7 +77,7 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, onUpdated, 
                 </button>
               ))}
               {SUGGESTED_EMOJIS.filter((emoji) => !draft.emojis.includes(emoji)).map((emoji) => (
-                <button key={emoji} type="button" className="flex h-9 min-w-11 items-center justify-center rounded-full border border-dashed border-white/15 px-2.5 text-base opacity-60 hover:opacity-100" aria-label={`Add ${emoji}`} title="Add" onClick={() => addEmoji(emoji)}>{emoji}</button>
+                <button key={emoji} type="button" className="flex h-9 min-w-11 items-center justify-center rounded-full border border-dashed border-hi/15 px-2.5 text-base opacity-60 hover:opacity-100" aria-label={`Add ${emoji}`} title="Add" onClick={() => addEmoji(emoji)}>{emoji}</button>
               ))}
               <form className="flex items-center gap-1" onSubmit={(event) => { event.preventDefault(); addEmoji(emojiInput); setEmojiInput('') }}>
                 <TextInput inputSize="sm" aria-label="Add another emoji" placeholder="Other" className="w-20" value={emojiInput} maxLength={16} onChange={(event) => setEmojiInput(event.target.value)} />
@@ -121,7 +121,7 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, onUpdated, 
         </div>
       </details>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-3">
+      <div className="flex flex-wrap items-center gap-2 border-t border-hi/[0.06] pt-3">
         <Button size="sm" variant="primary" loading={busy === 'apply-picked'} disabled={!valid || pickedIds.length === 0} onClick={() => void apply(pickedIds)}
           title={pickedIds.length ? undefined : 'Tick clips in the queue first'}>Apply to selected ({pickedIds.length})</Button>
         <Button size="sm" loading={busy === 'apply-all'} disabled={!valid || queued.length === 0} onClick={() => void apply(null)}>Apply to all queued ({queued.length})</Button>

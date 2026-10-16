@@ -63,7 +63,7 @@ function QuestionResult({ name, entry }: { name: string; entry: Entry }): React.
   const gate = jevQuestionGate(name, answer, entry)
   const criteria = question?.criteria
   const definitions = criteria && typeof criteria === 'object' ? Object.entries(criteria) : []
-  return <article className="space-y-2 rounded-lg border border-white/10 p-3" aria-label={`Jev question: ${label(name)}`}>
+  return <article className="space-y-2 rounded-lg border border-hi/10 p-3" aria-label={`Jev question: ${label(name)}`}>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h4 className="text-sm font-semibold capitalize">{label(name)}</h4>
       {gate && <span className={`rounded px-2 py-1 text-xs font-medium ${gate.passed ? 'bg-emerald-950 text-emerald-200' : 'bg-amber-950 text-amber-200'}`}>{gate.passed ? 'Pass' : 'Below threshold'}</span>}
@@ -89,9 +89,9 @@ export function JevTrace({ trace }: { trace: EditorialTrace | null }): React.JSX
   const selectId = useId()
   const entry = entries[selected] ?? entries[0]
   if (trace?.coherence?.status === 'skipped' && trace.coherence.reason === 'disabled_by_user') {
-    return <p className="rounded-xl border border-white/10 p-4 text-sm text-ink-muted">Jev review was turned off for this run. BridgeClip used the planner’s proposed clips and cuts without Jev checks or repairs.</p>
+    return <p className="rounded-xl border border-hi/10 p-4 text-sm text-ink-muted">Jev review was turned off for this run. MerveilleClip used the planner’s proposed clips and cuts without Jev checks or repairs.</p>
   }
-  if (!entry) return <p className="rounded-xl border border-white/10 p-4 text-sm text-ink-muted">No Jev question trace was recorded for this candidate. Older runs may only have a transcript.</p>
+  if (!entry) return <p className="rounded-xl border border-hi/10 p-4 text-sm text-ink-muted">No Jev question trace was recorded for this candidate. Older runs may only have a transcript.</p>
   const judgment = entry.judgment
   const names = [...new Set([...Object.keys(judgment?.questions ?? {}), ...Object.keys(judgment?.answers ?? {})])]
   const failures = names.filter(name => jevQuestionGate(name, judgment?.answers[name], entry)?.passed === false)
@@ -103,7 +103,7 @@ export function JevTrace({ trace }: { trace: EditorialTrace | null }): React.JSX
     </div>
     <div className="space-y-2">
       <label htmlFor={selectId} className="text-xs text-ink-muted">Evaluation</label>
-      <select id={selectId} aria-label="Jev evaluation" value={selected} onChange={e => setSelected(Number(e.target.value))} className="block w-full min-w-0 rounded-lg border border-white/15 bg-surface px-3 py-2 text-sm">
+      <select id={selectId} aria-label="Jev evaluation" value={selected} onChange={e => setSelected(Number(e.target.value))} className="block w-full min-w-0 rounded-lg border border-hi/15 bg-surface px-3 py-2 text-sm">
         {[...new Set(entries.map(e => e.group))].map(group => <optgroup key={group} label={group}>
           {entries.map((e, i) => e.group === group && <option key={i} value={i}>{e.title} · {label(e.decision)} · {label(e.judgment?.status ?? 'not requested')}</option>)}
         </optgroup>)}
@@ -111,7 +111,7 @@ export function JevTrace({ trace }: { trace: EditorialTrace | null }): React.JSX
       <div className="flex items-center gap-3 text-xs"><button className="text-purple-300 disabled:opacity-40" disabled={selected === 0} onClick={() => setSelected(selected - 1)}>Previous evaluation</button>
         <span>{selected + 1} of {entries.length}</span><button className="text-purple-300 disabled:opacity-40" disabled={selected >= entries.length - 1} onClick={() => setSelected(selected + 1)}>Next evaluation</button></div>
     </div>
-    <div className="rounded-lg bg-white/5 p-3 text-xs">
+    <div className="rounded-lg bg-hi/5 p-3 text-xs">
       <p className="font-medium capitalize">Recorded decision: {label(entry.decision)}{entry.reason && ` · ${label(entry.reason)}`}</p>
       {entry.range && <p className="mt-1 text-ink-muted">Source intervals: {entry.range}</p>}
       {failures.length > 0 && <p className="mt-2 text-amber-200">Below threshold: {failures.map(label).join(', ')}.</p>}
@@ -124,10 +124,10 @@ export function JevTrace({ trace }: { trace: EditorialTrace | null }): React.JSX
     <details className="text-xs text-ink-muted"><summary className="cursor-pointer">How to read probabilities & confidence</summary>
       <p className="mt-2">Yes percentages are Jev’s probability of “yes.” For choices and scores, confidence describes distribution concentration, not guaranteed correctness. The recorded decision also accounts for evidence and edit constraints.</p>
     </details>
-    <details className="rounded-lg border border-white/10 p-3 text-xs"><summary className="cursor-pointer text-purple-300">Saved input evidence · transcript & context</summary>
+    <details className="rounded-lg border border-hi/10 p-3 text-xs"><summary className="cursor-pointer text-purple-300">Saved input evidence · transcript & context</summary>
       <div className="mt-3">{entry.evidence ? <JsonViewer label="Saved input evidence" value={entry.evidence} /> : <p>Input evidence was not saved for this evaluation.</p>}</div>
     </details>
-    {judgment && <details className="rounded-lg border border-white/10 p-3 text-xs"><summary className="cursor-pointer text-ink-muted">Full saved request / result · model, tokens, cost & cache</summary>
+    {judgment && <details className="rounded-lg border border-hi/10 p-3 text-xs"><summary className="cursor-pointer text-ink-muted">Full saved request / result · model, tokens, cost & cache</summary>
       <JsonViewer className="mt-3" label="Jev request and result" value={{ state: entry.evidence, ...judgment }} />
     </details>}
   </section>

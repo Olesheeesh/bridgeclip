@@ -22,7 +22,7 @@ const TONES: Record<CalloutTone, { box: string; icon: string; Icon: typeof Info 
     Icon: Check
   },
   info: {
-    box: 'bg-white/[0.045] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1),inset_0_1px_0_rgb(255_255_255/0.06)]',
+    box: 'bg-hi/[0.045] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1),inset_0_1px_0_rgb(255_255_255/0.06)]',
     icon: 'text-ink-muted',
     Icon: Info
   }

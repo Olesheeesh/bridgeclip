@@ -46,7 +46,7 @@ export function ChatList({ conversations, activeId, running, waiting, onOpen, on
   }, [conversations, query])
 
   return (
-    <aside aria-label="Chats" className={cn('w-[248px] shrink-0 flex-col border-r border-white/[0.06]', className)}>
+    <aside aria-label="Chats" className={cn('w-[248px] shrink-0 flex-col border-r border-hi/[0.06]', className)}>
       <div className="flex items-center justify-between gap-2 pb-2 pl-4 pr-2.5 pt-2.5">
         <h2 className="text-sm font-semibold text-ink">Chats</h2>
         <Button variant="ghost" size="sm" iconOnly aria-label="New chat" tooltip="New chat" icon={<SquarePen className="h-3.5 w-3.5" />} onClick={onNew} disabled={activeId === null} />
@@ -74,7 +74,7 @@ export function ChatList({ conversations, activeId, running, waiting, onOpen, on
                       onClick={() => onOpen(chat.id)}
                       className={cn(
                         'flex h-8 w-full items-center gap-2.5 rounded-lg pl-2.5 pr-8 text-left text-xs transition-colors duration-150',
-                        active ? 'bg-white/[0.09] text-ink' : 'text-ink-muted hover:bg-white/[0.05] hover:text-ink'
+                        active ? 'bg-hi/[0.09] text-ink' : 'text-ink-muted hover:bg-hi/[0.05] hover:text-ink'
                       )}
                     >
                       <ProviderLogo provider={chat.provider} className="h-3.5 w-3.5 shrink-0" />
@@ -95,7 +95,7 @@ export function ChatList({ conversations, activeId, running, waiting, onOpen, on
                         aria-label={`Delete “${chat.title}”`}
                         title="Delete chat"
                         onClick={() => onDelete(chat)}
-                        className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-ink-subtle opacity-0 transition-opacity duration-150 hover:bg-white/[0.08] hover:text-danger focus-visible:opacity-100 group-hover/chat:opacity-100"
+                        className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-ink-subtle opacity-0 transition-opacity duration-150 hover:bg-hi/[0.08] hover:text-danger focus-visible:opacity-100 group-hover/chat:opacity-100"
                       >
                         <Trash2 aria-hidden className="h-3.5 w-3.5" />
                       </button>

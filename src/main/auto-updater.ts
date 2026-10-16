@@ -38,7 +38,7 @@ function errorCode(error: unknown): string {
 }
 
 function macBundlePath(): string {
-  // …/BridgeClip.app/Contents/MacOS/BridgeClip. A macOS path, so resolve it
+  // …/MerveilleClip.app/Contents/MacOS/MerveilleClip. A macOS path, so resolve it
   // with POSIX rules on every host (the tests run on Windows too).
   return posix.resolve(app.getPath('exe'), '..', '..', '..')
 }
@@ -123,8 +123,8 @@ function registerIpc(): void {
             buttons: ['Replace', 'Cancel'],
             defaultId: 1,
             cancelId: 1,
-            message: 'Replace the BridgeClip in your Applications folder?',
-            detail: 'Applications already has a copy of BridgeClip. Replacing it moves that copy to the Trash.'
+            message: 'Replace the MerveilleClip in your Applications folder?',
+            detail: 'Applications already has a copy of MerveilleClip. Replacing it moves that copy to the Trash.'
           }
           const window = getWindow()
           return (window ? dialog.showMessageBoxSync(window, options) : dialog.showMessageBoxSync(options)) === 0

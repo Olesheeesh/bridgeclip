@@ -109,7 +109,7 @@ function createWindow(): void {
     minWidth: 720,
     minHeight: 520,
     show: false,
-    title: 'BridgeClip',
+    title: 'MerveilleClip',
     icon: is.dev ? devIcon : undefined,
     // macOS-only window chrome: 'hiddenInset' and trafficLightPosition are
     // ignored on other platforms, so only pass them on darwin.

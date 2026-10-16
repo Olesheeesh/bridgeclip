@@ -54,7 +54,7 @@ export function newestReleaseWith(releases: unknown, channelFile: string): strin
  * code-signature checks, stays with electron-updater.
  */
 export class PlatformGitHubProvider extends GitHubProvider {
-  /** Installed as `{ provider: 'custom', updateProvider }`; always reads BridgeClip's releases. */
+  /** Installed as `{ provider: 'custom', updateProvider }`; always reads MerveilleClip's releases. */
   constructor(_options: unknown, updater: AppUpdater, runtimeOptions: ProviderRuntimeOptions) {
     super({ provider: 'github', ...UPDATE_REPOSITORY }, updater, runtimeOptions)
   }

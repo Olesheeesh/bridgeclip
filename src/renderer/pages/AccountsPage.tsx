@@ -50,7 +50,7 @@ function ZernioSetup(): React.JSX.Element {
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-ink">Connect with Zernio</h2>
             <p className="mt-0.5 text-xs text-ink-muted">
-              Post and schedule clips to {ZERNIO_PLATFORMS.length} platforms. BridgeClip only holds your Zernio key; platform sign-in happens in your browser.
+              Post and schedule clips to {ZERNIO_PLATFORMS.length} platforms. MerveilleClip only holds your Zernio key; platform sign-in happens in your browser.
             </p>
           </div>
           <div aria-hidden className="hidden shrink-0 -space-x-1 sm:flex">
@@ -59,7 +59,7 @@ function ZernioSetup(): React.JSX.Element {
             ))}
           </div>
         </div>
-        <ol className="divide-y divide-white/[0.06] border-t border-white/[0.06]">
+        <ol className="divide-y divide-hi/[0.06] border-t border-hi/[0.06]">
           <SetupStep
             step={1}
             action={
@@ -78,7 +78,7 @@ function ZernioSetup(): React.JSX.Element {
               </Button>
             }
           >
-            <StepText title="Create an API key" hint="Full access with Read & Write permission, so BridgeClip can create and connect profiles. Copy it right away: Zernio only shows it once." />
+            <StepText title="Create an API key" hint="Full access with Read & Write permission, so MerveilleClip can create and connect profiles. Copy it right away: Zernio only shows it once." />
           </SetupStep>
           <SetupStep step={3}>
             <ApiKeyInput
@@ -100,7 +100,7 @@ function ZernioSetup(): React.JSX.Element {
 function SetupStep({ step, action, children }: { step: number; action?: ReactNode; children: ReactNode }): React.JSX.Element {
   return (
     <li className="flex items-start gap-3 px-4 py-3">
-      <span className="mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-white/[0.08] font-mono text-2xs tabular text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
+      <span className="mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-hi/[0.08] font-mono text-2xs tabular text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
         {step}
       </span>
       <div className="min-w-0 flex-1">{children}</div>
@@ -587,7 +587,7 @@ interface AccountTileProps {
   connecting: boolean
   busy: boolean
   disconnecting: boolean
-  /** Absent for platforms BridgeClip can't connect (accounts added in Zernio itself). */
+  /** Absent for platforms MerveilleClip can't connect (accounts added in Zernio itself). */
   onConnect?: () => void
   /** Asks Zernio for a fresh sign-in on the connected account. */
   onReconnect?: () => void
@@ -633,7 +633,7 @@ function AccountTile({
           <TileText name={name} detail={<span className="text-ink-subtle">{note ?? 'Not connected'}</span>} title={note} detailId={detailId} dim />
           <span
             aria-hidden
-            className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-white/[0.06] px-2 text-2xs font-medium text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors duration-150 group-hover/tile:bg-white/[0.11] group-hover/tile:text-ink"
+            className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-hi/[0.06] px-2 text-2xs font-medium text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors duration-150 group-hover/tile:bg-hi/[0.11] group-hover/tile:text-ink"
           >
             <Plus className="h-3 w-3" />
             Connect

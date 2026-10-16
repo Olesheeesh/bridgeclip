@@ -70,7 +70,7 @@ export function SoundEffectsPanel({ automation, disabled, onUpdated, onNotice }:
           </div>
           {sounds.length === 0
             ? <p className="glass-well rounded-xl px-3 py-4 text-xs text-ink-subtle">Add MP3/WAV files like “Faaah”, “Vine boom” or “Explosion”. AI places them in clips made for this automation.</p>
-            : <ul className="divide-y divide-white/[0.06] rounded-xl border border-white/[0.07]">
+            : <ul className="divide-y divide-hi/[0.06] rounded-xl border border-hi/[0.07]">
               {sounds.map((sound) => (
                 <li key={sound.id} className="flex flex-wrap items-center gap-2.5 px-2.5 py-2">
                   <Button size="sm" variant="secondary" iconOnly aria-label={playing === sound.id ? `Stop ${sound.name}` : `Play ${sound.name}`}

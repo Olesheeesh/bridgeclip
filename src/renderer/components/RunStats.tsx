@@ -93,7 +93,7 @@ export function RunStats({ output, costs, videoSpeed }: RunStatsProps): React.JS
   )
 
   return (
-    <div role="group" aria-label="Run stats" className="glass grid grid-cols-2 overflow-hidden rounded-3xl min-[960px]:grid-cols-4 [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(odd)]:border-r min-[960px]:[&>*:nth-child(-n+2)]:border-b-0 min-[960px]:[&>*:not(:last-child)]:border-r [&>*]:border-white/[0.06]">
+    <div role="group" aria-label="Run stats" className="glass grid grid-cols-2 overflow-hidden rounded-3xl min-[960px]:grid-cols-4 [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(odd)]:border-r min-[960px]:[&>*:nth-child(-n+2)]:border-b-0 min-[960px]:[&>*:not(:last-child)]:border-r [&>*]:border-hi/[0.06]">
       <StatCell
         index={0}
         icon={<Clapperboard />}
@@ -143,7 +143,7 @@ export function RunStats({ output, costs, videoSpeed }: RunStatsProps): React.JS
   )
 }
 
-const HOVER_CELL = 'group/hover transition-colors duration-150 hover:bg-white/[0.025] focus-visible:bg-white/[0.025]'
+const HOVER_CELL = 'group/hover transition-colors duration-150 hover:bg-hi/[0.025] focus-visible:bg-hi/[0.025]'
 
 function HoverHint(): React.JSX.Element {
   return <Info aria-hidden className="h-3 w-3 text-ink-subtle transition-colors group-hover/hover:text-ink" />
@@ -205,7 +205,7 @@ function OpusClipCard({ headline, comparison, basis }: { headline: string; compa
         <p className="mt-3 text-3xl font-semibold leading-none tracking-[-0.03em] text-success">{headline}</p>
         <p className="mt-1.5 text-sm text-ink-muted">{comparison}</p>
       </div>
-      <p className="border-t border-white/[0.07] bg-black/15 px-4 py-2.5 text-2xs leading-relaxed text-ink-subtle">{basis}</p>
+      <p className="border-t border-hi/[0.07] bg-black/15 px-4 py-2.5 text-2xs leading-relaxed text-ink-subtle">{basis}</p>
     </div>
   )
 }

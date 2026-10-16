@@ -409,7 +409,7 @@ test('engine checks distinguish missing modules, models, contracts and timeouts 
   result = { status: 'dependency', module: 'private/secret' }
   assert.doesNotMatch((await check()).error, /private/)
   result = { status: 'dependency', module: 'clip_engine' }
-  assert.match((await check()).hint, /same BridgeClip version/)
+  assert.match((await check()).hint, /same MerveilleClip version/)
   result = { status: 'model' }
   const model = await check()
   assert.match(model.hint, /face_detection_yunet_2023mar.onnx/)
@@ -428,7 +428,7 @@ test('engine checks distinguish missing modules, models, contracts and timeouts 
   rejection = null
   result = { status: 'dependency', module: 'cv2' }
   const packaged = await check()
-  assert.match(packaged.hint, /Reinstall BridgeClip/)
+  assert.match(packaged.hint, /Reinstall MerveilleClip/)
   assert.equal(packaged.repairCommand, null)
   assert.doesNotMatch(JSON.stringify(packaged), /private traceback/)
 })

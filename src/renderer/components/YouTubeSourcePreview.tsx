@@ -71,7 +71,7 @@ export function YouTubeSourcePreview({ url, onClear, onReplace, disabled, readOn
               {preview?.title ?? 'YouTube video'}
             </h3>
             {channel && <div className="mt-2 flex min-w-0 items-center gap-2">
-              <span aria-hidden="true" className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-[10px] font-semibold text-ink-muted">{Array.from(channel)[0]?.toLocaleUpperCase()}</span>
+              <span aria-hidden="true" className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-hi/[0.08] text-[10px] font-semibold text-ink-muted">{Array.from(channel)[0]?.toLocaleUpperCase()}</span>
               <p className="truncate text-xs text-ink-muted" title={channel}>{channel}</p>
             </div>}
             {(views || uploaded) && <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-2xs text-ink-subtle">
@@ -83,7 +83,7 @@ export function YouTubeSourcePreview({ url, onClear, onReplace, disabled, readOn
           </>}
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-hi/[0.06] px-3 py-2">
         <span className="inline-flex items-center gap-1.5 text-2xs text-ink-muted"><Check className="h-3 w-3" aria-hidden="true" /> {readOnly ? 'Source video' : 'Video added'}</span>
         <div className="flex flex-wrap items-center gap-1">
           {!preview && !loading && <Button size="sm" variant="ghost" icon={<RefreshCw className="h-3 w-3" />} onClick={() => setAttempt((value) => value + 1)} disabled={disabled}>Retry details</Button>}

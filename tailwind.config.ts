@@ -13,6 +13,8 @@ const config: Config = {
     extend: {
       colors: {
         canvas: channel('canvas'),
+        /** Hairlines and glass tints: white on dark themes, ink on light ones. */
+        hi: channel('hi'),
         surface: channel('surface'),
         raised: channel('raised'),
         overlay: channel('overlay'),
@@ -23,13 +25,13 @@ const config: Config = {
           faint: channel('ink-faint')
         },
         line: {
-          DEFAULT: 'rgb(255 255 255 / 0.09)',
-          strong: 'rgb(255 255 255 / 0.16)'
+          DEFAULT: 'rgb(var(--hi) / 0.09)',
+          strong: 'rgb(var(--hi) / 0.16)'
         },
         fill: {
-          DEFAULT: 'rgb(255 255 255 / 0.05)',
-          hover: 'rgb(255 255 255 / 0.08)',
-          selected: 'rgb(255 255 255 / 0.11)'
+          DEFAULT: 'rgb(var(--hi) / 0.05)',
+          hover: 'rgb(var(--hi) / 0.08)',
+          selected: 'rgb(var(--hi) / 0.11)'
         },
         accent: {
           DEFAULT: channel('accent'),
@@ -45,7 +47,7 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        sans: ['var(--font-ui)', 'Geist', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
         mono: ['"Geist Mono"', '"SF Mono"', 'ui-monospace', 'Menlo', 'monospace']
       },
       fontSize: {
@@ -71,11 +73,11 @@ const config: Config = {
         '3xl': '18px'
       },
       boxShadow: {
-        panel: 'inset 0 1px 0 0 rgb(255 255 255 / 0.06), 0 1px 2px rgb(0 0 0 / 0.25), 0 18px 48px -24px rgb(0 0 0 / 0.6)',
-        pop: 'inset 0 1px 0 rgb(255 255 255 / 0.1), 0 40px 100px -24px rgb(0 0 0 / 0.8), 0 12px 32px -12px rgb(0 0 0 / 0.55)',
+        panel: 'inset 0 1px 0 0 rgb(var(--hi) / 0.06), 0 1px 2px rgb(0 0 0 / 0.25), 0 18px 48px -24px rgb(0 0 0 / 0.6)',
+        pop: 'inset 0 1px 0 rgb(var(--hi) / 0.1), 0 40px 100px -24px rgb(0 0 0 / 0.8), 0 12px 32px -12px rgb(0 0 0 / 0.55)',
         accent: '0 0 0 1px rgb(var(--accent) / 0.5)',
         'accent-ring':
-          'inset 0 1px 0 rgb(255 255 255 / 0.12), 0 0 0 1px rgb(var(--accent) / 0.9), 0 0 0 4px rgb(var(--accent) / 0.18)'
+          'inset 0 1px 0 rgb(var(--hi) / 0.12), 0 0 0 1px rgb(var(--accent) / 0.9), 0 0 0 4px rgb(var(--accent) / 0.18)'
       },
       transitionTimingFunction: {
         out: 'cubic-bezier(0.16, 1, 0.3, 1)',

@@ -1,0 +1,11 @@
+Fonts used by the MerveilleClip Sherbet theme, vendored as variable WOFF2 (Latin subset):
+
+Figtree-Variable.woff2
+  Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree)
+
+BricolageGrotesque-Variable.woff2
+  Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage)
+
+Both are licensed under the SIL Open Font License, Version 1.1.
+The full license text is in Geist-OFL.txt next to this file (same license),
+and at https://openfontlicense.org

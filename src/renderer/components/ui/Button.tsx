@@ -22,7 +22,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const VARIANTS: Record<Variant, string> = {
   primary: 'btn-primary',
   secondary: 'btn-glass text-ink disabled:text-ink-subtle disabled:opacity-60',
-  ghost: 'text-ink-muted hover:bg-white/[0.07] hover:text-ink disabled:text-ink-faint disabled:hover:bg-transparent',
+  ghost: 'text-ink-muted hover:bg-hi/[0.07] hover:text-ink disabled:text-ink-faint disabled:hover:bg-transparent',
   danger:
     'text-danger bg-danger/[0.08] shadow-[inset_0_0_0_1px_rgb(var(--danger)/0.28),inset_0_1px_0_rgb(255_255_255/0.06)] hover:bg-danger/[0.15] hover:shadow-[inset_0_0_0_1px_rgb(var(--danger)/0.45),inset_0_1px_0_rgb(255_255_255/0.08)]'
 }

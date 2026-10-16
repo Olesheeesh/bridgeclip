@@ -18,7 +18,7 @@ export const MENU_SURFACE = 'glass-thick rounded-xl p-1 text-sm text-ink'
 export function menuOptionClass(active: boolean, disabled = false): string {
   return cn(
     'flex w-full cursor-default select-none items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors duration-100',
-    disabled ? 'text-ink-muted opacity-50' : active ? 'bg-white/[0.08] text-ink' : 'text-ink-muted'
+    disabled ? 'text-ink-muted opacity-50' : active ? 'bg-hi/[0.08] text-ink' : 'text-ink-muted'
   )
 }
 
@@ -335,7 +335,7 @@ export function Select({
           style={{ top: -9999, left: -9999 }}
         >
           {searchable && (
-            <div className="mb-1 flex shrink-0 items-center gap-2 border-b border-white/[0.07] px-2.5 pb-1">
+            <div className="mb-1 flex shrink-0 items-center gap-2 border-b border-hi/[0.07] px-2.5 pb-1">
               <Search aria-hidden className="h-3.5 w-3.5 shrink-0 text-ink-subtle" />
               <input
                 ref={searchRef}

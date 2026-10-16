@@ -127,7 +127,7 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
   const exportingRef = useRef(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  // Older BridgeClip engine runs do not record output format; use the first thumbnail for those.
+  // Older MerveilleClip engine runs do not record output format; use the first thumbnail for those.
   const [aspect, setAspect] = useState<number | null>(null)
   const settings = output.metrics?.requested_settings
   const requestedAspect = settings && typeof settings === 'object' && !Array.isArray(settings)
@@ -218,7 +218,7 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
     if (deletingRef.current || exportingRef.current) return
     deletingRef.current = true; setDeleting(true); setDeleteError(null)
     try {
-      if (typeof getApi().history.deleteClips !== 'function') throw new Error('Restart BridgeClip to enable deleting selected clips.')
+      if (typeof getApi().history.deleteClips !== 'function') throw new Error('Restart MerveilleClip to enable deleting selected clips.')
       const fresh = await getApi().history.deleteClips(outputDir, indices)
       onOutputChanged(fresh)
       setSelected(new Set()); setStatusRetry((value) => value + 1)
@@ -299,7 +299,7 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
               onDelete={outputDir ? () => confirmDelete([clip.clip_index]) : undefined}
               actionsDisabled={deleting || exporting}
               onSetPosted={outputDir ? async (posted) => {
-                if (!getApi().history.setPosted) throw new Error('Restart BridgeClip to enable manual posted marks.')
+                if (!getApi().history.setPosted) throw new Error('Restart MerveilleClip to enable manual posted marks.')
                 await getApi().history.setPosted(outputDir, clip.clip_index, posted)
                 setStatusRetry((value) => value + 1)
                 if (posted) setPostedExpanded(true)
@@ -439,7 +439,7 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
               </Button>
               {outputDir && <Button variant="danger" size="sm" iconOnly aria-label="Delete selected clips" title="Delete selected clips"
                 icon={<Trash2 className="h-3.5 w-3.5" />} loading={deleting} disabled={exporting} onClick={() => confirmDelete(clips.filter((clip) => selected.has(clip.clip_index)).map((clip) => clip.clip_index))} />}
-              <span aria-hidden className="mx-1 h-5 w-px bg-white/10" />
+              <span aria-hidden className="mx-1 h-5 w-px bg-hi/10" />
             </div>
           )}
           <Segmented<Sort>
@@ -510,7 +510,7 @@ function ClipGroup({ title, count, expanded, onToggle, children }: { title: stri
   return <section className="mt-4">
     <h2>
       <button type="button" id={`${id}-heading`} aria-expanded={expanded} aria-controls={`${id}-content`} onClick={onToggle}
-        className="glass-well flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-base font-semibold text-ink transition-colors hover:bg-white/[0.06]">
+        className="glass-well flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-base font-semibold text-ink transition-colors hover:bg-hi/[0.06]">
         <ChevronDown aria-hidden className={cn('h-4 w-4 shrink-0 text-ink-muted transition-transform', !expanded && '-rotate-90')} />
         <span>{title}</span><span className="ml-auto font-mono text-sm font-normal tabular text-ink-muted">{count}</span>
       </button>
@@ -524,7 +524,7 @@ export function BackLink({ label, onClick }: { label: string; onClick: () => voi
   return (
     <button
       onClick={onClick}
-      className="-ml-2 inline-flex h-6 items-center gap-1 rounded-full pl-1.5 pr-2.5 text-xs font-medium text-ink-muted transition-colors duration-150 hover:bg-white/[0.06] hover:text-ink"
+      className="-ml-2 inline-flex h-6 items-center gap-1 rounded-full pl-1.5 pr-2.5 text-xs font-medium text-ink-muted transition-colors duration-150 hover:bg-hi/[0.06] hover:text-ink"
     >
       <ArrowLeft className="h-3.5 w-3.5" />
       {label}

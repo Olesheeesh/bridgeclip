@@ -57,6 +57,23 @@
   font-display: swap;
 }
 
+/* Sherbet theme faces, vendored (SIL OFL 1.1, see assets/fonts/Sherbet-OFL.txt). */
+@font-face {
+  font-family: 'Figtree';
+  src: url('./assets/fonts/Figtree-Variable.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('./assets/fonts/BricolageGrotesque-Variable.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: 'Geist Mono';
   src: url('./assets/fonts/GeistMono-Variable.woff2') format('woff2');
@@ -90,8 +107,75 @@
     --danger: 255 107 110;
     --warning: 251 191 36;
 
+    --hi: 255 255 255;          /* hairlines and glass tints */
+    --thick: 25 27 36;          /* floating glass (dialogs, popovers) */
+    --well: 0 0 0;              /* recessed inputs */
+    --well-alpha: 0.26;
+    --font-ui: 'Geist';
+    --font-display: 'Geist';
+
     color-scheme: dark;
   }
+
+  /* MerveilleClip Sherbet: warm graphite or warm paper, a tangerine accent and
+     mint for success. Opt-in from Settings → Appearance; the classic BridgeClip
+     glass above stays the default. */
+  html[data-theme='sherbet-dark'] {
+    --canvas: 29 27 33;          /* #1D1B21 */
+    --surface: 37 34 42;         /* #25222A */
+    --raised: 48 44 54;          /* #302C36 */
+    --overlay: 54 50 61;
+
+    --ink: 244 241 246;          /* #F4F1F6 */
+    --ink-muted: 182 175 190;    /* #B6AFBE */
+    --ink-subtle: 146 139 155;
+    --ink-faint: 104 98 112;
+
+    --accent: 255 138 76;        /* tangerine #FF8A4C */
+    --accent-button-hover: 255 160 110;
+    --accent-ink: 29 27 33;      /* dark text on the bright fill */
+    --accent-cyan: 95 211 166;   /* mint */
+
+    --success: 95 211 166;       /* mint #5FD3A6 */
+    --danger: 255 112 112;
+    --warning: 255 201 77;
+
+    --hi: 255 244 236;
+    --thick: 40 37 46;
+    --font-ui: 'Figtree';
+    --font-display: 'Bricolage Grotesque';
+    color-scheme: dark;
+  }
+
+  html[data-theme='sherbet-light'] {
+    --canvas: 246 245 243;       /* #F6F5F3 */
+    --surface: 255 255 255;
+    --raised: 239 236 232;       /* #EFECE8 */
+    --overlay: 255 255 255;
+
+    --ink: 36 33 42;             /* #24212A */
+    --ink-muted: 95 89 101;      /* #5F5965 */
+    --ink-subtle: 112 106 118;
+    --ink-faint: 150 144 154;
+
+    --accent: 184 76 20;         /* burnt tangerine #B84C14: 4.9:1 on the canvas */
+    --accent-button-hover: 160 64 14;
+    --accent-ink: 255 255 255;
+    --accent-cyan: 31 143 104;
+
+    --success: 31 143 104;       /* #1F8F68 */
+    --danger: 196 48 48;
+    --warning: 154 103 0;
+
+    --hi: 36 33 42;
+    --thick: 255 255 255;
+    --well: 255 255 255;
+    --well-alpha: 0.9;
+    --font-ui: 'Figtree';
+    --font-display: 'Bricolage Grotesque';
+    color-scheme: light;
+  }
+
 
   * {
     @apply border-line;
@@ -105,6 +189,7 @@
 
   body {
     @apply bg-canvas font-sans text-sm text-ink antialiased;
+    font-family: var(--font-ui), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -219,9 +304,9 @@
      Needs a rounded-* class. */
   .glass {
     position: relative;
-    background: rgb(255 255 255 / 0.045);
+    background: rgb(var(--hi) / 0.045);
     box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.08),
+      inset 0 0 0 1px rgb(var(--hi) / 0.08),
       0 1px 2px rgb(0 0 0 / 0.25),
       0 18px 48px -24px rgb(0 0 0 / 0.6);
   }
@@ -230,20 +315,20 @@
      toolbars, popovers. Blurs whatever scrolls beneath it. */
   .glass-thick {
     position: relative;
-    background: rgb(25 27 36 / 0.8);
+    background: rgb(var(--thick) / 0.8);
     -webkit-backdrop-filter: blur(40px) saturate(170%);
     backdrop-filter: blur(40px) saturate(170%);
     box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.1),
+      inset 0 0 0 1px rgb(var(--hi) / 0.1),
       0 40px 100px -24px rgb(0 0 0 / 0.8),
       0 12px 32px -12px rgb(0 0 0 / 0.55);
   }
 
   /* Nested tile inside a panel: rows, option cards, sub-sections. */
   .glass-tile {
-    background: rgb(255 255 255 / 0.033);
-    border: 1px solid rgb(255 255 255 / 0.08);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+    background: rgb(var(--hi) / 0.033);
+    border: 1px solid rgb(var(--hi) / 0.08);
+    box-shadow: inset 0 1px 0 rgb(var(--hi) / 0.05);
   }
 
   .glass-tile-hover {
@@ -253,8 +338,8 @@
   }
 
   .glass-tile-hover:hover {
-    background: rgb(255 255 255 / 0.055);
-    border-color: rgb(255 255 255 / 0.14);
+    background: rgb(var(--hi) / 0.055);
+    border-color: rgb(var(--hi) / 0.14);
   }
 
   /* Chosen option: accent-tinted glass with a soft halo. */
@@ -263,17 +348,17 @@
     background: rgb(var(--accent) / 0.12);
     border-color: rgb(var(--accent) / 0.7);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      inset 0 1px 0 rgb(var(--hi) / 0.12),
       0 0 0 3px rgb(var(--accent) / 0.14);
   }
 
   /* Recessed well for text inputs and inset lists. */
   .glass-well {
-    background: rgb(0 0 0 / 0.26);
-    border: 1px solid rgb(255 255 255 / 0.085);
+    background: rgb(var(--well) / var(--well-alpha));
+    border: 1px solid rgb(var(--hi) / 0.085);
     box-shadow:
       inset 0 1px 2px rgb(0 0 0 / 0.35),
-      0 1px 0 rgb(255 255 255 / 0.035);
+      0 1px 0 rgb(var(--hi) / 0.035);
   }
 
   /* Small label floating over video or artwork. */
@@ -292,7 +377,7 @@
     color: rgb(var(--accent-ink));
     background: rgb(var(--accent));
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      inset 0 1px 0 rgb(var(--hi) / 0.16),
       inset 0 -1px 0 rgb(0 0 0 / 0.12),
       0 0 0 1px rgb(var(--accent) / 0.6);
   }
@@ -300,32 +385,32 @@
   .btn-primary:hover:not(:disabled) {
     background: rgb(var(--accent-button-hover));
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.2),
+      inset 0 1px 0 rgb(var(--hi) / 0.2),
       inset 0 -1px 0 rgb(0 0 0 / 0.12),
       0 0 0 1px rgb(var(--accent-button-hover) / 0.7);
   }
 
   .btn-primary:disabled {
-    color: rgb(255 255 255 / 0.45);
+    color: rgb(var(--hi) / 0.45);
     background: rgb(var(--accent) / 0.22);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 1px rgb(var(--accent) / 0.25);
+    box-shadow: inset 0 1px 0 rgb(var(--hi) / 0.08), 0 0 0 1px rgb(var(--accent) / 0.25);
     text-shadow: none;
   }
 
   /* Glass capsule for secondary actions. */
   .btn-glass {
-    background: rgb(255 255 255 / 0.075);
+    background: rgb(var(--hi) / 0.075);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.14),
-      inset 0 0 0 1px rgb(255 255 255 / 0.09),
+      inset 0 1px 0 rgb(var(--hi) / 0.14),
+      inset 0 0 0 1px rgb(var(--hi) / 0.09),
       0 1px 2px rgb(0 0 0 / 0.3);
   }
 
   .btn-glass:hover:not(:disabled) {
-    background: rgb(255 255 255 / 0.11);
+    background: rgb(var(--hi) / 0.11);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.18),
-      inset 0 0 0 1px rgb(255 255 255 / 0.14),
+      inset 0 1px 0 rgb(var(--hi) / 0.18),
+      inset 0 0 0 1px rgb(var(--hi) / 0.14),
       0 4px 12px -4px rgb(0 0 0 / 0.4);
   }
 }
@@ -341,14 +426,14 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(255 255 255 / 0.1);
+  background: rgb(var(--hi) / 0.1);
   border: 4px solid transparent;
   background-clip: padding-box;
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(255 255 255 / 0.2);
+  background-color: rgb(var(--hi) / 0.2);
 }
 
 ::-webkit-scrollbar-corner {
@@ -388,16 +473,65 @@
   appearance: none;
   overflow: hidden;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, .07);
+  background: rgb(var(--hi) / .07);
 }
-.stage-progress::-webkit-progress-bar { background: rgba(255, 255, 255, .07); border-radius: 9999px; }
-.stage-progress::-webkit-progress-value { background: var(--color-accent, #2563eb); border-radius: 9999px; transition: width .2s ease; }
+.stage-progress::-webkit-progress-bar { background: rgb(var(--hi) / .07); border-radius: 9999px; }
+.stage-progress::-webkit-progress-value { background: rgb(var(--accent)); border-radius: 9999px; transition: width .2s ease; }
 .stage-progress:indeterminate {
-  background: linear-gradient(90deg, transparent, #2563eb 50%, transparent) -100% 0 / 50% 100% no-repeat, rgba(255, 255, 255, .07);
+  background: linear-gradient(90deg, transparent, rgb(var(--accent)) 50%, transparent) -100% 0 / 50% 100% no-repeat, rgb(var(--hi) / .07);
   animation: stage-progress-pulse 1.8s ease-in-out infinite;
 }
 @keyframes stage-progress-pulse { to { background-position: 200% 0; } }
 @media (prefers-reduced-motion: reduce) {
   .stage-progress:indeterminate { animation: none; background-position: 50% 0; }
   .stage-progress::-webkit-progress-value { transition: none; }
+}
+
+/* ─── MerveilleClip Sherbet overrides (outside layers so they beat the materials) ── */
+/* Light paper needs softer shadows than dark glass. */
+html[data-theme='sherbet-light'] .glass {
+  background: rgb(255 255 255 / 0.85);
+  box-shadow: inset 0 0 0 1px rgb(36 33 42 / 0.09), 0 1px 2px rgb(36 33 42 / 0.06), 0 12px 32px -20px rgb(36 33 42 / 0.25);
+}
+html[data-theme='sherbet-light'] .glass-thick {
+  box-shadow: inset 0 0 0 1px rgb(36 33 42 / 0.1), 0 24px 64px -24px rgb(36 33 42 / 0.35), 0 8px 24px -12px rgb(36 33 42 / 0.2);
+}
+html[data-theme='sherbet-light'] .glass-well {
+  box-shadow: inset 0 1px 2px rgb(36 33 42 / 0.08);
+}
+html[data-theme='sherbet-light'] .btn-glass,
+html[data-theme='sherbet-light'] .btn-glass:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px rgb(36 33 42 / 0.14), 0 1px 2px rgb(36 33 42 / 0.08);
+}
+html[data-theme='sherbet-light'] .shadow-panel,
+html[data-theme='sherbet-light'] .shadow-pop {
+  box-shadow: inset 0 0 0 1px rgb(36 33 42 / 0.08), 0 16px 40px -24px rgb(36 33 42 / 0.3);
+}
+
+/* The clip editor stays a dark room on the light theme, like most video
+   editors: footage reads best on dark surrounds. */
+html[data-theme='sherbet-light'] .clip-editor {
+  --canvas: 29 27 33;
+  --surface: 37 34 42;
+  --raised: 48 44 54;
+  --overlay: 54 50 61;
+  --ink: 244 241 246;
+  --ink-muted: 182 175 190;
+  --ink-subtle: 146 139 155;
+  --ink-faint: 104 98 112;
+  --accent: 255 138 76;
+  --accent-button-hover: 255 160 110;
+  --accent-ink: 29 27 33;
+  --success: 95 211 166;
+  --hi: 255 244 236;
+  --thick: 40 37 46;
+  --well: 0 0 0;
+  --well-alpha: 0.26;
+  color-scheme: dark;
+}
+
+html[data-theme^='sherbet'] h1 {
+  font-family: var(--font-display), var(--font-ui), sans-serif;
+  font-weight: 750;
+  letter-spacing: -0.02em;
 }

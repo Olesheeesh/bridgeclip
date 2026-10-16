@@ -28,7 +28,7 @@ export function Field({ label, hint, aside, htmlFor, children, className }: Fiel
 
 /** Recessed glass well shared by text inputs, selects and text areas. */
 export const WELL =
-  'glass-well transition-[border-color,box-shadow,background-color] duration-200 ease-out hover:border-white/[0.14] ' +
+  'glass-well transition-[border-color,box-shadow,background-color] duration-200 ease-out hover:border-hi/[0.14] ' +
   'focus-within:border-accent/70 focus-within:bg-black/30 focus-within:shadow-[inset_0_1px_2px_rgb(0_0_0/0.35),0_0_0_4px_rgb(var(--accent)/0.16)]'
 
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -81,7 +81,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
       ref={ref}
       className={cn(
         'block w-full resize-y rounded-lg px-3 py-2 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none',
-        'glass-well transition-[border-color,box-shadow] duration-200 ease-out hover:border-white/[0.14]',
+        'glass-well transition-[border-color,box-shadow] duration-200 ease-out hover:border-hi/[0.14]',
         'focus:border-accent/70 focus:shadow-[inset_0_1px_2px_rgb(0_0_0/0.35),0_0_0_4px_rgb(var(--accent)/0.16)]',
         className
       )}

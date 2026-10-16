@@ -63,7 +63,7 @@ export function Segmented<T extends string>({ label, value, options, onChange, s
               'rounded-full font-medium transition-[background,color,box-shadow] duration-200 ease-out',
               size === 'sm' ? 'h-6 px-2.5 text-xs' : 'h-7 px-3 text-xs',
               selected
-                ? 'bg-white/[0.12] text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.2),inset_0_0_0_1px_rgb(255_255_255/0.1),0_2px_8px_-2px_rgb(0_0_0/0.5)]'
+                ? 'bg-hi/[0.12] text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.2),inset_0_0_0_1px_rgb(255_255_255/0.1),0_2px_8px_-2px_rgb(0_0_0/0.5)]'
                 : 'text-ink-muted hover:text-ink',
               option.disabled && 'cursor-not-allowed text-ink-faint hover:text-ink-faint'
             )}

@@ -137,7 +137,7 @@ function DropZone({
         aria-hidden
         className={cn(
           'pointer-events-none absolute inset-1.5 rounded-xl border border-dashed transition-colors duration-200',
-          dragging ? 'border-accent/60' : 'border-white/[0.08]'
+          dragging ? 'border-accent/60' : 'border-hi/[0.08]'
         )}
       />
 

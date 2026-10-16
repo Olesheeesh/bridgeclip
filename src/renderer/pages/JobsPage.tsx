@@ -248,13 +248,13 @@ function JobsList({ active, entries, filter, query, error, refreshing, onFilter,
         {active.length > 0 && (
           <Panel padded={false} className="overflow-hidden">
             <section aria-label="Active jobs">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] py-2 pl-4 pr-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hi/[0.06] py-2 pl-4 pr-3">
                 <SectionTitle label="Active" count={active.length} />
                 <p className="text-2xs text-ink-subtle">
                   {running} running{queued > 0 && ` · ${queued} queued`} · up to {MAX_PARALLEL_JOBS} at once
                 </p>
               </div>
-              <ul className="divide-y divide-white/[0.05]">
+              <ul className="divide-y divide-hi/[0.05]">
                 {active.map((job) => (
                   <ActiveJobRow
                     key={job.id}
@@ -279,7 +279,7 @@ function JobsList({ active, entries, filter, query, error, refreshing, onFilter,
         ) : (
           <Panel padded={false} className="overflow-hidden">
             <section aria-label="Previous jobs">
-              <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.06] py-1.5 pl-4 pr-1.5">
+              <div className="flex flex-wrap items-center gap-2 border-b border-hi/[0.06] py-1.5 pl-4 pr-1.5">
                 <SectionTitle label="Previous" count={previous.length} className="mr-auto" />
                 {previous.length > 0 && (
                   <>
@@ -293,7 +293,7 @@ function JobsList({ active, entries, filter, query, error, refreshing, onFilter,
                             aria-pressed={selected}
                             className={cn(
                               'inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition-colors duration-150',
-                              selected ? 'bg-white/[0.1] text-ink' : 'text-ink-muted hover:bg-white/[0.05] hover:text-ink'
+                              selected ? 'bg-hi/[0.1] text-ink' : 'text-ink-muted hover:bg-hi/[0.05] hover:text-ink'
                             )}
                           >
                             {option.label}
@@ -315,7 +315,7 @@ function JobsList({ active, entries, filter, query, error, refreshing, onFilter,
               </div>
 
               {entries === null ? (
-                <ul className="divide-y divide-white/[0.05]" aria-busy="true" aria-label="Loading jobs">
+                <ul className="divide-y divide-hi/[0.05]" aria-busy="true" aria-label="Loading jobs">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <li key={i} className="flex h-10 items-center gap-3 px-4">
                       <Skeleton className="h-2 w-2 rounded-full" />
@@ -329,7 +329,7 @@ function JobsList({ active, entries, filter, query, error, refreshing, onFilter,
               ) : visible.length === 0 ? (
                 <p className="px-4 py-3 text-xs text-ink-subtle">No jobs match this filter.</p>
               ) : (
-                <ul className="divide-y divide-white/[0.05]">
+                <ul className="divide-y divide-hi/[0.05]">
                   {visible.map((entry) => (
                     <PreviousJobRow key={entry.jobId} entry={entry} hasDetails={Boolean(sessionJobs[entry.jobId])} onOpen={() => onOpenEntry(entry)} onOpenFolder={() => onOpenFolder(entry.outputDir)} />
                   ))}
@@ -365,10 +365,10 @@ function ActiveJobRow({ job, position, onOpen, onCancel }: { job: Job; position:
   const detail = queued ? 'Starts when a slot frees up' : job.step
 
   return (
-    <li className="flex items-center pr-2 transition-colors duration-150 hover:bg-white/[0.025]">
+    <li className="flex items-center pr-2 transition-colors duration-150 hover:bg-hi/[0.025]">
       <button onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 py-2 pl-4 pr-3 text-left" title={job.request.videoUrl}>
         {queued ? (
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.05] font-mono text-2xs tabular text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-hi/[0.05] font-mono text-2xs tabular text-ink-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]">
             #{position}
           </span>
         ) : (
@@ -477,7 +477,7 @@ function PreviousJobRow({ entry, hasDetails, onOpen, onOpenFolder }: { entry: Hi
   const cellClass = 'flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-4 pr-2 text-left'
 
   return (
-    <li className={cn('group/row flex items-center pr-2 transition-colors duration-150', openable && 'hover:bg-white/[0.025]')}>
+    <li className={cn('group/row flex items-center pr-2 transition-colors duration-150', openable && 'hover:bg-hi/[0.025]')}>
       {openable ? (
         <button onClick={onOpen} className={cellClass} title={completed ? 'Open in Library' : 'Open job'}>{cells}</button>
       ) : (

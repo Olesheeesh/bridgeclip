@@ -55,7 +55,7 @@ export function ProviderLogo({ provider, variant = 'glyph', size = 'sm', classNa
     <span
       aria-hidden
       className={cn(
-        'flex shrink-0 items-center justify-center bg-white/[0.06] text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.1),inset_0_0_0_1px_rgb(255_255_255/0.09)]',
+        'flex shrink-0 items-center justify-center bg-hi/[0.06] text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.1),inset_0_0_0_1px_rgb(255_255_255/0.09)]',
         TILE_SIZES[size],
         className
       )}

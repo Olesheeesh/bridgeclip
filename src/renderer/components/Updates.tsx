@@ -22,7 +22,7 @@ function useRestartToUpdate(): { restart: () => void; dialog: React.JSX.Element 
     if (activeJobs === 0) return install()
     setRequest({
       title: 'Restart to update?',
-      body: `${activeJobs === 1 ? 'A clipping job is' : `${activeJobs} clipping jobs are`} still running. Restarting stops ${activeJobs === 1 ? 'it' : 'them'}; the update also installs the next time you quit BridgeClip.`,
+      body: `${activeJobs === 1 ? 'A clipping job is' : `${activeJobs} clipping jobs are`} still running. Restarting stops ${activeJobs === 1 ? 'it' : 'them'}; the update also installs the next time you quit MerveilleClip.`,
       confirmLabel: 'Restart anyway',
       tone: 'danger',
       onConfirm: install
@@ -36,7 +36,7 @@ export function SidebarUpdateButton({ expanded }: { expanded: boolean }): React.
   const update = useUpdateStore((s) => s.update)
   const { restart, dialog } = useRestartToUpdate()
   if (update?.status !== 'ready') return null
-  const label = `BridgeClip ${update.version} is ready. Restart to update`
+  const label = `MerveilleClip ${update.version} is ready. Restart to update`
   return (
     <>
       <button
@@ -63,11 +63,11 @@ function describe(update: UpdateState): string {
       return {
         development: 'Updates are off when running from source. Pull the latest code to update.',
         unofficial: 'Updates are off for builds not signed by BridgeMind. Download the official app from bridgeclip.ai to get updates.',
-        'move-to-applications': 'Move BridgeClip to your Applications folder to get updates.',
+        'move-to-applications': 'Move MerveilleClip to your Applications folder to get updates.',
         disabled: 'Updates are turned off in this fork.'
       }[update.reason]
     case 'idle':
-      return `BridgeClip checks for updates automatically.${checked}`
+      return `MerveilleClip checks for updates automatically.${checked}`
     case 'checking':
       return 'Checking for updates…'
     case 'up-to-date':
@@ -112,7 +112,7 @@ export function UpdatesRow(): React.JSX.Element | null {
   }
 
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-hi/[0.06] pt-4">
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 text-sm font-medium text-ink">
           <StatusDot tone={update.status === 'error' ? 'warning' : update.status === 'ready' || busy ? 'accent' : update.status === 'up-to-date' ? 'success' : 'idle'} pulse={busy} />

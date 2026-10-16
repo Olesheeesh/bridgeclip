@@ -1,6 +1,6 @@
 // Single source for product identity, shared by the main process (menu,
 // window title) and the renderer.
-export const APP_NAME = 'BridgeClip'
+export const APP_NAME = 'MerveilleClip'
 export const APP_TAGLINE = 'Open-source AI video clipping'
 
 export const REPO_URL = 'https://github.com/bridge-mind/bridgeclip'

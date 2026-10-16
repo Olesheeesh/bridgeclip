@@ -11,7 +11,7 @@ export function JobDiagnostics({ diagnostics, saved = false }: { diagnostics?: R
   const hasReportedCost = rows.some(row => row.requests - row.active > row.unknown_cost)
   const incomplete = rows.some(row => row.unknown_cost > 0 || row.active > 0)
   const phases = Object.entries(preparation?.timings ?? {}) as [keyof typeof PREPARATION_PHASES, number][]
-  return <div className="mt-5 space-y-4 border-t border-white/[0.08] pt-5">
+  return <div className="mt-5 space-y-4 border-t border-hi/[0.08] pt-5">
     {preparation && <section aria-label="Candidate preparation details" className="rounded-2xl border border-orange-300/15 bg-orange-300/[0.03] p-4">
       <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="eyebrow text-orange-300">Inside frame &amp; review</p>
         <h2 className="mt-1 text-sm font-medium text-ink">{!saved ? `Candidate ${preparation.candidate} of ${preparation.total}` : 'Candidate preparation'}</h2></div>
@@ -27,14 +27,14 @@ export function JobDiagnostics({ diagnostics, saved = false }: { diagnostics?: R
       <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-sm font-medium text-ink">{saved ? 'Model usage' : 'Live model usage'}</h2>
         <p className="mt-1 text-2xs text-ink-subtle">Requested models · updates after each provider response</p></div>
         <div className="text-right"><p className="font-mono text-lg tabular text-ink">{hasReportedCost ? dollars(knownCost) : '—'}</p><p className="text-2xs text-ink-subtle">{incomplete ? 'Reported so far · partial' : 'Provider-reported cost'}</p></div></div>
-      {rows.length ? <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead className="border-b border-white/[0.08] text-2xs text-ink-subtle"><tr>
+      {rows.length ? <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead className="border-b border-hi/[0.08] text-2xs text-ink-subtle"><tr>
         <th className="pb-2 font-normal">Model / stage</th><th className="px-3 pb-2 text-right font-normal">Calls</th><th className="px-3 pb-2 text-right font-normal">Input / output tokens</th><th className="pb-2 text-right font-normal">Cost</th>
-      </tr></thead><tbody>{rows.map(row => <tr key={`${row.stage}:${row.model}`} className="border-b border-white/[0.04] last:border-0">
+      </tr></thead><tbody>{rows.map(row => <tr key={`${row.stage}:${row.model}`} className="border-b border-hi/[0.04] last:border-0">
         <td className="py-3"><p className="break-all font-medium text-ink">{row.model}</p><p className="mt-1 text-2xs text-ink-subtle">{STAGE_NAMES[row.stage]}{row.active ? ` · ${row.active} in progress` : ''}{row.failed ? ` · ${row.failed} failed` : ''}</p></td>
         <td className="px-3 py-3 text-right font-mono tabular text-ink-muted">{row.requests}</td>
         <td className="px-3 py-3 text-right font-mono tabular text-ink-muted">{row.unknown_usage === row.requests - row.active && row.input_tokens + row.output_tokens === 0 ? '—' : `${count(row.input_tokens)} / ${count(row.output_tokens)}`}{row.unknown_usage > 0 && row.input_tokens + row.output_tokens > 0 ? ' +' : ''}</td>
         <td className="py-3 text-right font-mono tabular text-ink-muted">{row.unknown_cost === row.requests - row.active && row.cost_usd === 0 ? '—' : dollars(row.cost_usd)}{row.unknown_cost > 0 && row.cost_usd > 0 ? ' +' : ''}</td>
-      </tr>)}</tbody></table></div> : <p className="mt-3 rounded-xl bg-white/[0.025] px-3 py-4 text-xs text-ink-muted">{diagnostics ? 'No model requests yet. Local video processing does not use tokens.' : 'Usage details appear on jobs started with the updated engine.'}</p>}
+      </tr>)}</tbody></table></div> : <p className="mt-3 rounded-xl bg-hi/[0.025] px-3 py-4 text-xs text-ink-muted">{diagnostics ? 'No model requests yet. Local video processing does not use tokens.' : 'Usage details appear on jobs started with the updated engine.'}</p>}
       <p className="mt-2 text-2xs leading-relaxed text-ink-subtle">Unreported usage is shown as —, not zero. Audio models may report cost without tokens. Partial totals exclude missing charges and unfinished calls; cached Jev results add no requests.</p>
     </section>
   </div>

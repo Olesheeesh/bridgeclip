@@ -129,7 +129,7 @@ export function AutomationTikTokBatchReviewDialog({ automation, items, onClose, 
       if (event.key === 'Escape' && !saving) { event.preventDefault(); stop.current = true; onClose() }
       if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && canApprove) { event.preventDefault(); void approveAll() }
     }}>
-      <div className="border-b border-white/[0.07] px-5 py-4">
+      <div className="border-b border-hi/[0.07] px-5 py-4">
         <h2 id={titleId} className="text-base font-semibold text-ink">Review all for TikTok</h2>
         <p className="mt-1 text-sm text-ink-muted">{automation.name} · {items.length} {items.length === 1 ? 'clip' : 'clips'} waiting</p>
         <p className="mt-2 text-xs text-ink-subtle">Look through the clips and captions below, choose the TikTok settings once, then approve them together. Untick any clip you want to leave waiting. Each clip still goes through the same checks as a single review.</p>
@@ -142,7 +142,7 @@ export function AutomationTikTokBatchReviewDialog({ automation, items, onClose, 
             </Callout>
           )}
           {error && <Callout tone="danger">{error}</Callout>}
-          <ul className="divide-y divide-white/[0.06] rounded-xl border border-white/[0.07]">
+          <ul className="divide-y divide-hi/[0.06] rounded-xl border border-hi/[0.07]">
             {entries.map((entry) => {
               const issue = clipIssue(entry)
               return (
@@ -152,7 +152,7 @@ export function AutomationTikTokBatchReviewDialog({ automation, items, onClose, 
                   </div>
                   {entry.review
                     ? <video src={localFileUrl(entry.review.clipPath)} controls preload="metadata" className="h-[160px] w-[90px] shrink-0 rounded-lg bg-black object-contain" aria-label={`${entry.item.title} preview`} />
-                    : <div className="h-[160px] w-[90px] shrink-0 rounded-lg bg-white/[0.04]" aria-hidden />}
+                    : <div className="h-[160px] w-[90px] shrink-0 rounded-lg bg-hi/[0.04]" aria-hidden />}
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <p className="truncate text-sm font-medium text-ink" title={entry.item.title}>{entry.item.title}</p>
                     <TextArea rows={3} aria-label={`TikTok caption for ${entry.item.title}`} value={entry.caption} disabled={!entry.review || Boolean(saving)} onChange={(event) => update(entry.item.id, { caption: event.target.value })} />
