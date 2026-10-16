@@ -1,6 +1,6 @@
 import { JevSettings } from '../components/JevSettings'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowUpRight, BookA, Check, ChevronDown, Cpu, FolderOpen, Github, History, Info, KeyRound, Loader2, Palette, RefreshCw, ScrollText, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Bell, BookA, Check, ChevronDown, Cpu, FolderOpen, Github, History, Info, KeyRound, Loader2, Palette, RefreshCw, ScrollText, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { useSettingsStore } from '../store/use-settings-store'
 import { useChangelogStore } from '../store/use-changelog-store'
 import { useApiKeyDrafts } from '../hooks/use-api-key-drafts'
@@ -24,8 +24,9 @@ import { AssistantSettings } from '../components/assistant/AssistantSettings'
 import { useAssistantStore } from '../store/use-assistant-store'
 import { takeSettingsSection } from '../lib/settings-focus'
 import { APP_THEMES, saveTheme, storedTheme, type AppTheme } from '../lib/theme'
+import { NotificationSettings } from '../components/NotificationSettings'
 
-type SectionId = 'keys' | 'assistant' | 'jev' | 'vocabulary' | 'output' | 'appearance' | 'system' | 'about'
+type SectionId = 'keys' | 'assistant' | 'jev' | 'vocabulary' | 'output' | 'notifications' | 'appearance' | 'system' | 'about'
 type SectionTone = 'success' | 'warning' | 'danger' | 'idle'
 
 /** `showUpdates` changes each time Help → Check for Updates… asks for the Updates row. */
@@ -67,6 +68,7 @@ export function SettingsPage({ showUpdates = 0 }: { showUpdates?: number }): Rea
     { id: 'jev', label: 'TypeSafe Jev', icon: <SlidersHorizontal />, tone: 'idle' },
     { id: 'vocabulary', label: 'Vocabulary', icon: <BookA />, tone: 'idle' },
     { id: 'output', label: 'Output', icon: <FolderOpen />, tone: 'idle' },
+    { id: 'notifications', label: 'Notifications', icon: <Bell />, tone: 'idle' },
     { id: 'appearance', label: 'Appearance', icon: <Palette />, tone: 'idle' },
     { id: 'system', label: 'System check', icon: <Cpu />, tone: !toolsChecked ? 'idle' : toolsMissing ? 'danger' : 'success' },
     { id: 'about', label: 'About', icon: <Info />, tone: 'idle' }
@@ -218,6 +220,15 @@ export function SettingsPage({ showUpdates = 0 }: { showUpdates?: number }): Rea
               description="Every run gets its own folder of clips, transcript and plan."
             />
             <OutputFolder value={outputDirectory} onCommit={(dir) => commit({ outputDirectory: dir })} />
+          </Section>
+
+          <Section id="notifications">
+            <PanelHeader
+              icon={<IconTile><Bell /></IconTile>}
+              title="Notifications"
+              description="Know when a generation finishes, even away from the computer."
+            />
+            <NotificationSettings />
           </Section>
 
           <Section id="appearance">

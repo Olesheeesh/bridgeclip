@@ -20,6 +20,7 @@ import type { ClipMediaInfo, PostClipRequest, PostClipResult, PostProgress, Post
 import type { ClipJobRequest, JobSnapshot } from '../shared/jobs'
 import type { MetadataEnhancement, AutomationSourceGroup, AutomationBatchResult, AutomationSourceContext, Automation, AutomationUpdate, AutomationTikTokReview, AutomationTikTokReviewUpdate } from '../shared/automations'
 import type { TextTemplate } from '../shared/fork-text-template'
+import type { NotificationSettings } from '../shared/notifications'
 import type { AutomationSound, AutomationSoundSettings } from '../shared/automations'
 import type { LibraryClipPostingStatus, LibraryEnhancementOptions, LibraryRunPostingCounts } from '../shared/library-posting'
 import type { OpenRouterCatalog } from '../shared/openrouter-models'
@@ -239,6 +240,15 @@ export interface BridgeClipAPI {
     list: () => Promise<HistoryEntry[]>
     getJob: (outputDir: string) => Promise<Record<string, unknown> | null>
   }
+  /** Fork: finished-generation alerts (Windows and Telegram). */
+  notifications: {
+    get: () => Promise<NotificationSettings>
+    set: (update: { windows?: boolean; telegramEnabled?: boolean }) => Promise<NotificationSettings>
+    connectTelegram: (token: string) => Promise<NotificationSettings>
+    findTelegramChat: () => Promise<NotificationSettings>
+    disconnectTelegram: () => Promise<NotificationSettings>
+    test: () => Promise<{ windows: boolean; telegram: boolean }>
+  }
   thumbnails: {
     generate: (videoPath: string, seekSeconds?: number) => Promise<string | null>
   }
@@ -417,6 +427,14 @@ const api: BridgeClipAPI = {
     enhanceMetadata: (outputDir, clipIndex, options) => ipcRenderer.invoke('history:enhanceMetadata', outputDir, clipIndex, options),
     list: () => ipcRenderer.invoke('history:list'),
     getJob: (outputDir) => ipcRenderer.invoke('history:getJob', outputDir)
+  },
+  notifications: {
+    get: () => ipcRenderer.invoke('notifications:get'),
+    set: (update) => ipcRenderer.invoke('notifications:set', update),
+    connectTelegram: (token) => ipcRenderer.invoke('notifications:connectTelegram', token),
+    findTelegramChat: () => ipcRenderer.invoke('notifications:findTelegramChat'),
+    disconnectTelegram: () => ipcRenderer.invoke('notifications:disconnectTelegram'),
+    test: () => ipcRenderer.invoke('notifications:test')
   },
   thumbnails: {
     generate: (videoPath, seekSeconds) => ipcRenderer.invoke('thumbnails:generate', videoPath, seekSeconds)

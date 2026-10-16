@@ -18,6 +18,7 @@ import { automationEnhancementGroups, enhanceAutomationBatch, automationContentS
 import { acknowledgeAutomationWarnings, retryAutomationContent, dismissAutomationMetadataError, automationLibraryClip, reorderAutomationContent, reviewAutomationContent, showAutomationContentInFolder, setAutomationQueueOrder, sortAutomationQueueByTimeline, setAutomationTextTemplate, applyAutomationTextTemplate, addAutomationSounds, updateAutomationSounds, removeAutomationSound, automationSoundPreview } from './automations'
 import { libraryPostingStatus, libraryMetadataSource, enhanceLibraryMetadata } from './library-posting'
 import { libraryPostingSummary } from './library-posting'
+import { connectTelegramBot, disconnectTelegram, findTelegramChat, getNotificationSettings, setNotificationSwitches, testNotifications } from './notification-channels'
 import { deleteLibraryClips, deleteLibraryRun, keepJevHeldClip, setLibraryFavorite, setLibraryPosted } from './library-management'
 import {
   cancelZernioConnect,
@@ -202,6 +203,12 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   handle('history:postingStatus', (_event, outputDir: unknown) => libraryPostingStatus(outputDir))
   handle('history:postingSummary', (_event, outputDirs: unknown) => libraryPostingSummary(outputDirs))
+  handle('notifications:get', () => getNotificationSettings())
+  handle('notifications:set', (_event, update: unknown) => setNotificationSwitches(update))
+  handle('notifications:connectTelegram', (_event, token: unknown) => connectTelegramBot(token))
+  handle('notifications:findTelegramChat', () => findTelegramChat())
+  handle('notifications:disconnectTelegram', () => disconnectTelegram())
+  handle('notifications:test', () => testNotifications())
   handle('history:setPosted', (_event, outputDir: unknown, clipIndex: unknown, posted: unknown) => setLibraryPosted(outputDir, clipIndex, posted))
   handle('history:keepJevClip', (_event, outputDir: unknown, clipIndex: unknown) => keepJevHeldClip(outputDir, clipIndex))
   handle('history:setFavorite', (_event, outputDir: unknown, favorite: unknown) => setLibraryFavorite(outputDir, favorite))

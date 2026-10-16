@@ -1,7 +1,7 @@
 import { awaitEditorSaveBeforeClose, stopEditorsForQuit } from './clip-editor'
 import { app, BrowserWindow, dialog, nativeTheme, shell, protocol } from 'electron'
 import { extname, join } from 'path'
-import { mkdirSync } from 'fs'
+import { existsSync, mkdirSync } from 'fs'
 import { Readable } from 'stream'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createMenu } from './menu'
@@ -190,9 +190,34 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'local-file', privileges: { standard: true, stream: true, supportFetchAPI: true } }
 ])
 
+/**
+ * Fork: Windows only shows notifications from an unpackaged app when a Start
+ * menu shortcut carries the same AppUserModelID. Keep MerveilleClip.lnk (see
+ * scripts/windows/install-shortcuts.ps1) pointing at the launcher with that ID.
+ */
+function registerStartMenuShortcut(): void {
+  if (process.platform !== 'win32' || app.isPackaged || hiddenForTests || process.env.BRIDGECLIP_USER_DATA_DIR) return
+  try {
+    const link = join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'MerveilleClip.lnk')
+    const root = app.getAppPath()
+    shell.writeShortcutLink(link, existsSync(link) ? 'update' : 'create', {
+      target: join(process.env.WINDIR ?? 'C:\\Windows', 'System32', 'wscript.exe'),
+      args: `"${join(root, 'scripts', 'windows', 'launch-merveilleclip.vbs')}"`,
+      cwd: root,
+      icon: join(root, 'build', 'icon.ico'),
+      iconIndex: 0,
+      description: 'MerveilleClip: turn long videos into vertical clips',
+      appUserModelId: 'com.olesheeesh.bridgeclipfork'
+    })
+  } catch (error) {
+    logger.warn('app.shortcut_failed', errorSummary(error))
+  }
+}
+
 app.whenReady().then(() => {
   cleanStaleWorkspaces()
   electronApp.setAppUserModelId('com.olesheeesh.bridgeclipfork')
+  registerStartMenuShortcut()
   if (hiddenForTests) app.dock?.hide()
 
   // Boot-time diagnostic dump. This is the first thing in the log file and

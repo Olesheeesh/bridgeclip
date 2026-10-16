@@ -35,7 +35,7 @@ function checkedDirectory(baseDir: string, jobId: string): string {
   return dir
 }
 
-function sourceLabel(source: string): string {
+export function sourceLabel(source: string): string {
   const twitchId = twitchVodId(source)
   if (twitchId) return `Twitch VOD · ${twitchId}`.slice(0, 160)
   let label: string
