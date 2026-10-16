@@ -1,5 +1,8 @@
 import { normalizeVideoSource, twitchSourceError } from '../../shared/video-source'
-import { useEffect, useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import type { Automation } from '../../shared/automations'
+import { getApi } from '../lib/ipc'
+import { Select } from './ui/Select'
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock3, ListVideo, Minus, Plus, Sparkles } from 'lucide-react'
 import { cn, MOD_KEY, parseTimecode, sourceLabel } from '../lib/utils'
 import { useDraftStore, type ClipDraft, type WizardStep } from '../store/use-draft-store'
@@ -7,6 +10,7 @@ import { useActiveJobs } from '../store/use-job-store'
 import type { ClipJobRequest } from '../../shared/jobs'
 import { MAX_PARALLEL_JOBS } from '../../shared/jobs'
 import { CaptionPresetPicker, CAPTION_PRESET_NAMES } from './CaptionPresetPicker'
+import { StackLayoutPicker, TitleStylePicker } from './StackLayoutPicker'
 import { SourcePicker } from './SourcePicker'
 import { Panel } from './ui/Panel'
 import { Switch } from './ui/Switch'
@@ -78,6 +82,9 @@ export function buildJobRequest(draft: ClipDraft, trim: { start: number | null; 
     includeCaptions: draft.includeCaptions,
     captionPreset: draft.captionPreset,
     includeTitle: draft.includeTitle,
+    ...(draft.aspectRatio === '9:16' && draft.layoutStyle === 'auto' && draft.stackStyle ? { stackStyle: draft.stackStyle } : {}),
+    ...(draft.titleStyle !== 'box' ? { titleStyle: draft.titleStyle } : {}),
+    ...(draft.automationId && draft.workflow !== 'review' ? { automationId: draft.automationId } : {}),
     startTimeSeconds: trim.start,
     endTimeSeconds: trim.end,
     bannerPlatform: null,
@@ -295,9 +302,34 @@ function VideoStep({ draft, update, trimError, disabled }: { draft: ClipDraft; u
 }
 
 /** Format, framing and pacing. Exported for the keyboard-navigation test. */
+/** Fork: send the finished clips straight into an automation, using its video look. */
+function AutomationTarget({ draft, update }: { draft: ClipDraft; update: Update }): React.JSX.Element | null {
+  const [automations, setAutomations] = useState<Automation[] | null>(null)
+  useEffect(() => {
+    let active = true
+    getApi().automations.list().then((list) => { if (active) setAutomations(list) }).catch(() => { if (active) setAutomations([]) })
+    return () => { active = false }
+  }, [])
+  if (!automations?.length || draft.workflow === 'review') return null
+  const choose = (id: string): void => {
+    const automation = automations.find((item) => item.id === id)
+    const look = automation?.textTemplate
+    update({ automationId: automation ? automation.id : null, ...(look ? { stackStyle: look.stackStyle, titleStyle: look.titleStyle } : {}) })
+  }
+  const known = automations.some((item) => item.id === draft.automationId)
+  return (
+    <Group label="Add finished clips to" aside="Optional">
+      <Select id="job-automation" value={known ? draft.automationId! : 'none'} onChange={choose}
+        options={[{ value: 'none', label: 'Nowhere (library only)' }, ...automations.map((item) => ({ value: item.id, label: item.name }))]} />
+      <p className="mt-1.5 text-2xs text-ink-subtle">Clips join that automation's queue in timeline order. Its saved video look fills in the layout and title below.</p>
+    </Group>
+  )
+}
+
 export function FormatStep({ draft, update }: { draft: ClipDraft; update: Update }): React.JSX.Element {
   return (
     <div className="space-y-4">
+      <AutomationTarget draft={draft} update={update} />
       <Group label="Format">
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Format">
           {FORMATS.map((f) => {
@@ -373,6 +405,12 @@ export function FormatStep({ draft, update }: { draft: ClipDraft; update: Update
               control={<Switch label="AI vision for smart framing" checked={draft.layoutVision} onChange={(layoutVision) => update({ layoutVision })} />}
             />
           )}
+        </Group>
+      )}
+
+      {draft.aspectRatio === '9:16' && draft.layoutStyle === 'auto' && (
+        <Group label="Screen + camera layout" aside="Gameplay with a webcam">
+          <StackLayoutPicker value={draft.stackStyle} onChange={(stackStyle) => update({ stackStyle })} />
         </Group>
       )}
 
@@ -519,6 +557,9 @@ export function CaptionsStep({ draft, update }: { draft: ClipDraft; update: Upda
           description="Each clip's title over the video. Turn off to leave it out."
           control={<Switch label="Title at the top" checked={draft.includeTitle} onChange={(includeTitle) => update({ includeTitle })} />}
         />
+      )}
+      {draft.workflow !== 'review' && draft.includeTitle && (
+        <TitleStylePicker value={draft.titleStyle} onChange={(titleStyle) => update({ titleStyle })} />
       )}
       <SettingRow
         title="Burn in captions"

@@ -1,4 +1,27 @@
 import { create } from 'zustand'
+import { isStackStyle, isTitleStyle, STACK_PRESETS, type StackStyle, type TitleStyle } from '../../shared/fork-layout'
+
+/** Fork: remembered across restarts so the layout is chosen once, not per job. */
+const FORK_PREFS_KEY = 'bridgeclip.fork.layout'
+
+type ForkPrefs = { stackStyle: StackStyle | null; titleStyle: TitleStyle; automationId: string | null }
+
+function loadForkPrefs(): ForkPrefs {
+  const fallback: ForkPrefs = { stackStyle: STACK_PRESETS.find((preset) => preset.id === 'more')!.style, titleStyle: 'box', automationId: null }
+  try {
+    const saved = JSON.parse(localStorage.getItem(FORK_PREFS_KEY) ?? 'null') as { stackStyle?: unknown; titleStyle?: unknown; automationId?: unknown } | null
+    if (!saved) return fallback
+    return {
+      stackStyle: saved.stackStyle === null ? null : isStackStyle(saved.stackStyle) ? saved.stackStyle : fallback.stackStyle,
+      titleStyle: isTitleStyle(saved.titleStyle) ? saved.titleStyle : fallback.titleStyle,
+      automationId: typeof saved.automationId === 'string' ? saved.automationId : null
+    }
+  } catch { return fallback }
+}
+
+function saveForkPrefs(prefs: ForkPrefs): void {
+  try { localStorage.setItem(FORK_PREFS_KEY, JSON.stringify(prefs)) } catch { /* Preferences are a convenience. */ }
+}
 
 /** The Create wizard's steps, in order. */
 export type WizardStep = 'video' | 'format' | 'clips' | 'captions' | 'review'
@@ -38,6 +61,12 @@ export interface ClipDraft {
   captionPreset: string
   /** Automatic clips: the title card at the top of each clip. */
   includeTitle: boolean
+  /** Fork: screen + webcam framing in Smart 9:16 framing; null = stock layout. */
+  stackStyle: StackStyle | null
+  /** Fork: title card look. */
+  titleStyle: TitleStyle
+  /** Fork: automation that receives the finished clips; null = none. */
+  automationId: string | null
   trimOpen: boolean
   trimStart: string
   trimEnd: string
@@ -73,12 +102,22 @@ export const useDraftStore = create<DraftState>((set) => ({
   includeCaptions: true,
   captionPreset: 'pop',
   includeTitle: true,
+  ...loadForkPrefs(),
   trimOpen: false,
   trimStart: '',
   trimEnd: '',
   step: 'video',
   started: null,
-  update: (patch) => set(patch),
+  update: (patch) => set((state) => {
+    if ('stackStyle' in patch || 'titleStyle' in patch || 'automationId' in patch) {
+      saveForkPrefs({
+        stackStyle: patch.stackStyle !== undefined ? patch.stackStyle : state.stackStyle,
+        titleStyle: patch.titleStyle ?? state.titleStyle,
+        automationId: patch.automationId !== undefined ? patch.automationId : state.automationId
+      })
+    }
+    return patch
+  }),
   setStep: (step) => set({ step }),
   clearSource: () => set({ source: '', trimStart: '', trimEnd: '' }),
   markStarted: (started) => set({ started }),

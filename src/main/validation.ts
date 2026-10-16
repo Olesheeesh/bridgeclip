@@ -5,6 +5,7 @@ import { isWebUrl } from './security'
 import { CLIP_REQUEST_MAX_CHARS, DURATION_IDS, isVideoSpeed } from '../shared/job-contract'
 import { isModelId } from '../shared/openrouter-models'
 import type { ClipJobRequest } from '../shared/jobs'
+import { isStackStyle, isTitleStyle } from '../shared/fork-layout'
 
 // Trims what Python's str.strip() also treats as whitespace (\x1c-\x1f, \x85),
 // so the bridge never receives a request it considers blank.
@@ -21,6 +22,9 @@ export function validateJobConfig(value: unknown): ClipJobConfig {
   if (typeof v.autoClipCount !== 'boolean' || typeof v.includeCaptions !== 'boolean') throw new Error('Invalid job options')
   if (typeof v.layoutVision !== 'boolean') throw new Error('Invalid vision option')
   if (v.includeTitle !== undefined && typeof v.includeTitle !== 'boolean') throw new Error('Invalid title option')
+  if (v.stackStyle !== undefined && v.stackStyle !== null && !isStackStyle(v.stackStyle)) throw new Error('Invalid screen + camera layout')
+  if (v.titleStyle !== undefined && !isTitleStyle(v.titleStyle)) throw new Error('Invalid title style')
+  if (v.automationId !== undefined && (typeof v.automationId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.automationId))) throw new Error('Invalid automation')
   if (v.clipRequest !== undefined && (typeof v.clipRequest !== 'string' || v.clipRequest.includes('\0') || trimClipRequest(v.clipRequest).length > CLIP_REQUEST_MAX_CHARS)) throw new Error(`Describe what to clip in ${CLIP_REQUEST_MAX_CHARS} characters or fewer`)
   if (v.videoSpeed !== undefined && !isVideoSpeed(v.videoSpeed)) throw new Error('Video speed must be between 1× and 2×')
   if (v.workflow !== undefined && !['automatic', 'review'].includes(v.workflow)) throw new Error('Invalid workflow')
@@ -49,5 +53,5 @@ export function validateJobConfig(value: unknown): ClipJobConfig {
 const JOB_REQUEST_FIELDS: readonly (keyof ClipJobRequest)[] = [
   'workflow', 'videoUrl', 'clippingMode', 'plannerModel', 'transcriptionModel', 'clipRequest', 'maxClips', 'autoClipCount',
   'durationRanges', 'aspectRatio', 'layoutStyle', 'layoutVision', 'pacing', 'videoSpeed', 'includeCaptions', 'captionPreset',
-  'includeTitle', 'startTimeSeconds', 'endTimeSeconds', 'bannerPlatform', 'bannerChannelUrl'
+  'includeTitle', 'startTimeSeconds', 'endTimeSeconds', 'bannerPlatform', 'bannerChannelUrl', 'stackStyle', 'titleStyle', 'automationId'
 ]

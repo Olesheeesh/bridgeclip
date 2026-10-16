@@ -22,7 +22,7 @@ from fractions import Fraction
 from math import ceil
 from typing import Optional
 
-from clip_engine.services.layout_analyzer import Box, ClipLayoutPlan, LayoutType, ShotLayout
+from clip_engine.services.layout_analyzer import Box, ClipLayoutPlan, LayoutType, ShotLayout, StackStyle
 from clip_engine.services.video_speed import speed_audio_filter, validate_video_speed
 
 # Two people get equal space. Screen shares start with more room for the
@@ -215,7 +215,15 @@ def stacked_panel_heights(shot: ShotLayout, src_h: int, out_h: int) -> tuple[int
     must be enlarged beyond MAX_UPSCALE. Keep at least 30% for the webcam;
     overlays smaller still fill that panel anyway, enlarged further.
     The same seam is used by the graph and caption placement.
+    A styled screen + webcam shot (fork) returns (screen height, webcam
+    height) in the user's ratio; see screen_cam_panels for their order.
     """
+    style = styled(shot)
+    if style is not None:
+        if style.cam_position == "off":
+            return out_h, 0
+        screen_h = even(out_h * style.screen_ratio)
+        return screen_h, out_h - screen_h
     if shot.layout != LayoutType.SCREEN_CAM or shot.cam_box is None:
         top_h = even(out_h * TWO_SHOT_TOP_RATIO)
     else:
@@ -315,8 +323,123 @@ def screen_view(shot: ShotLayout, src_w: int, src_h: int, panel_w: int, panel_h:
     shots): a panel-aspect crop that covers the focus area, so the panel
     destination is always the full panel.
     """
+    style = styled(shot)
+    if style is not None and style.screen_fit != "zoom":
+        return fitted_screen_view(shot, style, src_w, src_h, panel_w, panel_h)
     rect = screen_crop(shot.screen_box, shot.screen_focus, src_w, src_h, panel_w, panel_h, shot.cam_box)
     return rect, (0, 0, panel_w, panel_h)
+
+
+# ------------------------------------------------------------------
+# Fork: user framing for screen + webcam shots (StackStyle)
+# ------------------------------------------------------------------
+
+# "wide" shows this much more screen width than the panel's own crop.
+WIDE_SCREEN_FACTOR = 1.5
+# Face zoom: crop height as a multiple of the face height.
+FACE_CROP_FACE_MULT = 2.0
+
+
+def styled(shot: ShotLayout) -> Optional[StackStyle]:
+    """The user's framing for a screen + webcam shot, or None for the stock layout."""
+    if shot.layout == LayoutType.SCREEN_CAM and shot.cam_box is not None:
+        return shot.stack_style
+    return None
+
+
+def screen_cam_panels(shot: ShotLayout, src_h: int, out_h: int) -> tuple[tuple[int, int], tuple[int, int]]:
+    """(y, height) of the screen panel and of the webcam panel on the output frame."""
+    screen_h, cam_h = stacked_panel_heights(shot, src_h, out_h)
+    style = styled(shot)
+    if style is not None and style.cam_position == "top":
+        return (cam_h, screen_h), (0, cam_h)
+    return (0, screen_h), (screen_h, cam_h)
+
+
+def fitted_screen_view(shot: ShotLayout, style: StackStyle, src_w: int, src_h: int, panel_w: int, panel_h: int):
+    """A screen crop wider than the panel, fitted to the panel width over a blurred fill.
+
+    whole: the entire screen. wide: the full screen height and half again the
+    panel crop's width, centered on the active area. The picture sits against
+    the webcam seam so the blurred fill collects on the far side (title room).
+    """
+    screen = (shot.screen_box or Box(0, 0, 1, 1)).clamp()
+    bounds = (screen.x * src_w, screen.y * src_h, screen.w * src_w, screen.h * src_h)
+    bx, by, bw, bh = bounds
+    aspect = panel_w / panel_h
+    if style.screen_fit == "whole":
+        crop_w, crop_h, cx = bw, bh, bx + bw / 2
+    else:
+        crop_h = bh
+        crop_w = min(bw, bh * aspect * WIDE_SCREEN_FACTOR)
+        cx = shot.screen_focus.cx * src_w if shot.screen_focus is not None else bx + bw / 2
+    if crop_w / crop_h < aspect:
+        # Narrower than the panel even so: the panel's own crop fills it.
+        crop_h = crop_w / aspect
+    w, h, x, y = _fit_rect(cx, by + bh / 2, crop_w, crop_h, bounds)
+    dest_w, dest_h = panel_w, min(panel_h, even(panel_w * h / w))
+    spare = panel_h - dest_h
+    dest_y = 0 if style.cam_position == "top" else spare if style.cam_position == "bottom" else spare // 2 // 2 * 2
+    return (w, h, x, y), (0, dest_y, dest_w, dest_h)
+
+
+def styled_cam_crop(shot: ShotLayout, style: StackStyle, src_w: int, src_h: int, panel_w: int, panel_h: int) -> tuple[int, int, int, int]:
+    """Webcam crop at the panel's aspect: the whole webcam, head and shoulders, or the face.
+
+    The detected webcam box is trimmed by cam_inset first, so a loose box never
+    brings game pixels (HUD text, chat) into the camera panel.
+    """
+    aspect = panel_w / panel_h
+    cam = shot.cam_box.clamp()
+    inset = style.cam_inset
+    cam = Box(cam.x + cam.w * inset, cam.y + cam.h * inset, cam.w * (1 - 2 * inset), cam.h * (1 - 2 * inset))
+    left, top = ceil(cam.x * src_w / 2) * 2, ceil(cam.y * src_h / 2) * 2
+    right = int((cam.x + cam.w) * src_w) // 2 * 2
+    bottom = int((cam.y + cam.h) * src_h) // 2 * 2
+    bounds = (left, top, max(2, right - left), max(2, bottom - top))
+    bw, bh = bounds[2], bounds[3]
+    largest_w, largest_h = (bh * aspect, bh) if bw / bh > aspect else (bw, bw / aspect)
+    face = shot.cam_face if shot.cam_face is not None and cam.contains(shot.cam_face.cx, shot.cam_face.cy) else None
+    if style.cam_zoom == "whole" or face is None:
+        return _fit_rect(cam.cx * src_w, cam.cy * src_h, largest_w, largest_h, bounds)
+    mult = PERSON_CROP_FACE_MULT if style.cam_zoom == "shoulders" else FACE_CROP_FACE_MULT
+    # Never tighter than the panel allows at a sane enlargement.
+    crop_h = _clamp(face.h * src_h * mult, min(largest_h, panel_h / (MAX_UPSCALE * 1.5)), largest_h)
+    crop_w = crop_h * aspect
+    if crop_w > largest_w:
+        crop_w, crop_h = largest_w, largest_w / aspect
+    fy = face.cy * src_h
+    return _fit_rect(face.cx * src_w, fy + crop_h * (0.5 - PERSON_FACE_Y), crop_w, crop_h, bounds)
+
+
+def styled_screen_cam_chain(i: int, shot: ShotLayout, style: StackStyle, src_w: int, src_h: int, out_w: int, out_h: int, scale: str) -> str:
+    """Filters for a styled screen + webcam shot, from [t{i}] to [v{i}]."""
+    (_, screen_h), (_, cam_h) = screen_cam_panels(shot, src_h, out_h)
+    screen_rect, (dx, dy, dw, dh) = screen_view(shot, src_w, src_h, out_w, screen_h)
+    has_cam = style.cam_position != "off" and cam_h > 0
+    source = f"sx{i}" if has_cam else f"t{i}"
+    parts = [f"[t{i}]split=2[sx{i}][cx{i}]"] if has_cam else []
+    screen_out = f"scr{i}" if has_cam else f"pre{i}"
+    if (dw, dh) == (out_w, screen_h):
+        parts.append(f"[{source}]{_crop(screen_rect)},scale={out_w}:{screen_h}:{scale}[{screen_out}]")
+    else:
+        # Blur at quarter size then upscale, as the Fit layout does.
+        bg_w, bg_h = even(out_w // 4), even(screen_h // 4)
+        parts.append(
+            f"[{source}]{_crop(screen_rect)},split=2[sbg{i}][sfg{i}];"
+            f"[sbg{i}]scale={bg_w}:{bg_h}:force_original_aspect_ratio=increase,crop={bg_w}:{bg_h},"
+            f"gblur=sigma=10,lutyuv=y=val-20,scale={out_w}:{screen_h}[sbb{i}];"
+            f"[sfg{i}]scale={dw}:{dh}:{scale}[sff{i}];"
+            f"[sbb{i}][sff{i}]overlay={dx}:{dy}[{screen_out}]"
+        )
+    if not has_cam:
+        parts.append(f"[pre{i}]setsar=1[v{i}]")
+        return ";".join(parts)
+    cam_rect = styled_cam_crop(shot, style, src_w, src_h, out_w, cam_h)
+    parts.append(f"[cx{i}]{_crop(cam_rect)},scale={out_w}:{cam_h}:{scale}[cam{i}]")
+    order = f"[cam{i}][scr{i}]" if style.cam_position == "top" else f"[scr{i}][cam{i}]"
+    parts.append(f"{order}vstack=inputs=2,setsar=1[v{i}]")
+    return ";".join(parts)
 
 
 # ------------------------------------------------------------------
@@ -432,6 +555,9 @@ def shot_chain(
             f"scale={out_w}:{out_h}:{scale},setsar=1[v{i}]"
         )
 
+    style = styled(shot)
+    if style is not None:
+        return styled_screen_cam_chain(i, shot, style, src_w, src_h, out_w, out_h, scale)
     top_h, bottom_h = stacked_panel_heights(shot, src_h, out_h)
     if shot.layout == LayoutType.TWO_SHOT and len(shot.people) >= 2:
         left, right = shot.people[0], shot.people[1]
@@ -676,6 +802,12 @@ TOP_TITLE_Y = 110
 
 def caption_anchor(shot: ShotLayout, src_w: int, src_h: int, out_w: int, out_h: int) -> tuple[int, int]:
     """(ASS alignment, y) for captions during this shot."""
+    style = styled(shot)
+    if style is not None:
+        if style.cam_position == "off":
+            return 5, int(out_h * FILL_CAPTION_Y / 1920)
+        (screen_y, screen_h), _ = screen_cam_panels(shot, src_h, out_h)
+        return 5, screen_y + screen_h if style.cam_position == "bottom" else screen_y  # on the seam
     if shot.layout == LayoutType.TWO_SHOT or (shot.layout == LayoutType.SCREEN_CAM and shot.cam_box is not None):
         return 5, stacked_panel_heights(shot, src_h, out_h)[0]  # centered on the seam
     if shot.layout in (LayoutType.SCREEN, LayoutType.SCREEN_CAM):
@@ -687,6 +819,11 @@ def caption_anchor(shot: ShotLayout, src_w: int, src_h: int, out_w: int, out_h: 
 
 
 def title_y(shot: ShotLayout, src_w: int, src_h: int, out_w: int, out_h: int, title_h: int) -> int:
+    style = styled(shot)
+    if style is not None and style.cam_position == "top":
+        # Below the webcam, at the top of the screen panel, never over the face.
+        (screen_y, _), _ = screen_cam_panels(shot, src_h, out_h)
+        return screen_y + int(out_h * 24 / 1920)
     if shot.layout == LayoutType.SCREEN:
         _, overlay_y = foreground_geometry(shot, src_w, src_h, out_w, out_h)
         if overlay_y > title_h + 20:
@@ -767,6 +904,16 @@ def shot_views(
         x = path_value_at(xs, t) if crop_w < src_w else 0
         y = path_value_at(ys, t) if crop_h < src_h else 0
         return [((x, y, crop_w, crop_h), (0, 0, out_w, out_h))]
+
+    style = styled(shot)
+    if style is not None:
+        (screen_y, screen_h), (cam_y, cam_h) = screen_cam_panels(shot, src_h, out_h)
+        screen, (dx, dy, dw, dh) = screen_view(shot, src_w, src_h, out_w, screen_h)
+        views = [((screen[2], screen[3], screen[0], screen[1]), (dx, screen_y + dy, dw, dh))]
+        if style.cam_position != "off" and cam_h > 0:
+            cam = styled_cam_crop(shot, style, src_w, src_h, out_w, cam_h)
+            views.append(((cam[2], cam[3], cam[0], cam[1]), (0, cam_y, out_w, cam_h)))
+        return views
 
     top_h, bottom_h = stacked_panel_heights(shot, src_h, out_h)
     if shot.layout == LayoutType.TWO_SHOT and len(shot.people) >= 2:

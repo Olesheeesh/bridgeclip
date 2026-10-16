@@ -20,8 +20,10 @@ import { logger } from './logger'
 import { generateAutomationMetadata, transcribeAutomationClip, researchAutomationTopic, generateAutomationMetadataBatch, metadataFailureCode, type MetadataBatchClip } from './automation-metadata'
 
 import { completeSourceContext, findLibraryClipForClip, parseSourceContext, recoverSourceContext, sourceFromOutput, sourceResearchKey } from './automation-source'
-import { hasContentWarnings, reorderQueuedContent, setQueuedOrder, timelineQueueOrder } from '../shared/automations'
+import { canReorderContent, DEFAULT_SOUND_SETTINGS, guessSoundKind, hasContentWarnings, reorderQueuedContent, setQueuedOrder, SOUND_INTENSITIES, SOUND_KINDS, timelineQueueOrder, type AutomationSound, type AutomationSoundSettings } from '../shared/automations'
+import { applyTextTemplate, isTextTemplate, type TextTemplate } from '../shared/fork-text-template'
 import type { JobOutput } from '../shared/job-output'
+import type { JobSnapshot } from '../shared/jobs'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TIME = /^(?:[01]\d|2[0-3]):[0-5]\d$/
@@ -158,7 +160,8 @@ const OPTIONAL_CONTENT_FIELDS: { [K in keyof AutomationContent]?: (value: Automa
   metadataErrorAcknowledged: (value) => value === undefined || typeof value === 'boolean',
   sourceClipPath: (value) => value === undefined || (typeof value === 'string' && value.length <= 8192 && !value.includes('\0')),
   tiktokApproval: (_value, item) => validTikTokApproval(item),
-  tiktokDraftCaption: (value) => value == null || (typeof value === 'string' && !value.includes('\0') && !checkCaption('tiktok', value).error)
+  tiktokDraftCaption: (value) => value == null || (typeof value === 'string' && !value.includes('\0') && !checkCaption('tiktok', value).error),
+  templateBase: (value) => value === undefined || (typeof value === 'string' && value.length <= 500 && !value.includes('\0'))
 }
 
 /** Remove invalid optional fields in place. Returns true when the store needs rewriting. */
@@ -177,6 +180,9 @@ function dropInvalidOptionalFields(value: unknown): boolean {
       if (kept.length !== automation.sourceResearch.length) { automation.sourceResearch = kept; drop('sourceResearch') }
     }
   }
+  if (automation.textTemplate != null && !isTextTemplate(automation.textTemplate)) { delete automation.textTemplate; drop('textTemplate') }
+  if (automation.sounds !== undefined && (!Array.isArray(automation.sounds) || !automation.sounds.every(validSound))) { delete automation.sounds; drop('sounds') }
+  if (automation.soundSettings !== undefined && !validSoundSettings(automation.soundSettings)) { delete automation.soundSettings; drop('soundSettings') }
   if (!Array.isArray(automation.content)) return changed
   for (const item of automation.content as unknown[]) {
     if (!item || typeof item !== 'object') continue
@@ -500,6 +506,7 @@ export function deleteAutomation(id: unknown): Automation[] {
   try { save(workspace) } catch (error) { cached = previous; throw error }
   forgetBankItems(workspace, automation.id, automation.content)
   rmSync(bankPath(workspace, automation.id), { recursive: true, force: true })
+  rmSync(soundsPath(workspace, automation.id), { recursive: true, force: true })
   return listAutomations()
 }
 
@@ -573,6 +580,10 @@ export async function addAutomationContent(id: unknown, paths: string[], titles?
     if (currentWorkspace() !== workspace || cachedWorkspace !== workspace || !cached.includes(automation)) {
       throw new Error('Automation changed while adding content.')
     }
+    if (automation.textTemplate?.autoApply) {
+      const queued = automation.content.filter(canReorderContent).length
+      pendingItems.forEach((item, index) => templateItem(automation.textTemplate!, item, queued + index + 1))
+    }
     const previousContent = automation.content
     const pruned = pruneHistory([...previousContent, ...pendingItems])
     automation.content = [...previousContent, ...pendingItems].filter((item) => !pruned.includes(item))
@@ -640,6 +651,188 @@ export async function sortAutomationQueueByTimeline(id: unknown): Promise<{ auto
   const queued = automation.content.filter((item) => item.status === 'queued' && !item.postId).length
   const placed = automation.content.filter((item) => item.status === 'queued' && !item.postId && positions.has(item.id)).length
   return { automations, placed, unknown: queued - placed }
+}
+
+// ─── Fork: sound-effect library per automation ─────────────────────────────
+
+const SOUND_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.aac'])
+const SOUND_MIME: Record<string, string> = { '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4', '.aac': 'audio/aac' }
+const MAX_SOUND_BYTES = 20 * 1024 * 1024
+const MAX_SOUNDS = 40
+
+function soundsPath(workspace: string, automationId: string): string { return join(app.getPath('userData'), 'automation-sounds', workspace, automationId) }
+
+function validSound(value: unknown): value is AutomationSound {
+  if (!value || typeof value !== 'object') return false
+  const s = value as AutomationSound
+  return typeof s.id === 'string' && UUID.test(s.id) && typeof s.name === 'string' && s.name.length > 0 && s.name.length <= 80 &&
+    typeof s.fileName === 'string' && s.fileName === `${s.id}${extname(s.fileName)}` && SOUND_EXTENSIONS.has(extname(s.fileName)) &&
+    SOUND_KINDS.includes(s.kind) && typeof s.volume === 'number' && s.volume >= 0 && s.volume <= 1.5 && typeof s.enabled === 'boolean'
+}
+
+function validSoundSettings(value: unknown): value is AutomationSoundSettings {
+  if (!value || typeof value !== 'object') return false
+  const s = value as AutomationSoundSettings
+  return typeof s.aiPlace === 'boolean' && SOUND_INTENSITIES.includes(s.intensity) && typeof s.keepSpeechClear === 'boolean'
+}
+
+/** Fork: copy sound files the user picked into this automation's library. */
+export async function addAutomationSounds(id: unknown, paths: string[]): Promise<Automation[]> {
+  const { workspace, automation } = find(id)
+  if (!Array.isArray(paths) || paths.length === 0) return listAutomations()
+  const sounds = automation.sounds ?? []
+  if (sounds.length + paths.length > MAX_SOUNDS) throw new Error(`An automation can hold up to ${MAX_SOUNDS} sounds.`)
+  const directory = soundsPath(workspace, automation.id)
+  mkdirSync(directory, { recursive: true, mode: 0o700 })
+  const added: AutomationSound[] = []
+  try {
+    for (const path of paths) {
+      const extension = extname(path).toLowerCase()
+      if (!SOUND_EXTENSIONS.has(extension)) throw new Error('Use MP3, WAV, OGG, M4A or AAC sounds.')
+      const size = statSync(path).size
+      if (size === 0 || size > MAX_SOUND_BYTES) throw new Error('Sounds must be smaller than 20 MB.')
+      const soundId = randomUUID()
+      const fileName = `${soundId}${extension}`
+      writeFileSync(join(directory, fileName), readFileSync(path), { mode: 0o600, flag: 'wx' })
+      const name = Array.from(basename(path, extname(path))).filter((c) => c.charCodeAt(0) >= 32).join('').replace(/[_-]+/g, ' ').trim().slice(0, 80) || 'Sound'
+      added.push({ id: soundId, name, fileName, kind: guessSoundKind(name), volume: 0.8, enabled: true })
+    }
+    automation.sounds = [...sounds, ...added]
+    automation.soundSettings ??= { ...DEFAULT_SOUND_SETTINGS }
+    save(workspace)
+  } catch (error) {
+    automation.sounds = sounds
+    for (const sound of added) rmSync(join(directory, sound.fileName), { force: true })
+    throw error
+  }
+  return listAutomations()
+}
+
+/** Fork: rename, re-tag, set volume or turn sounds on/off, and change AI placement settings. */
+export function updateAutomationSounds(id: unknown, raw: unknown): Automation[] {
+  const { workspace, automation } = find(id)
+  const value = raw as { sounds?: unknown; settings?: unknown } | null
+  if (!value || !Array.isArray(value.sounds) || !validSoundSettings(value.settings)) throw new Error('Invalid sound settings.')
+  const current = new Map((automation.sounds ?? []).map((sound) => [sound.id, sound]))
+  const next = value.sounds.map((sound) => {
+    const known = sound && typeof sound === 'object' ? current.get((sound as AutomationSound).id) : undefined
+    const merged = known ? { ...known, ...(sound as AutomationSound), fileName: known.fileName } : null
+    if (!merged || !validSound(merged)) throw new Error('Invalid sound.')
+    return merged
+  })
+  if (next.length !== current.size) throw new Error('The sound list changed. Reopen it and try again.')
+  const previous = { sounds: automation.sounds, settings: automation.soundSettings }
+  automation.sounds = next
+  automation.soundSettings = value.settings
+  try { save(workspace) } catch (error) { automation.sounds = previous.sounds; automation.soundSettings = previous.settings; throw error }
+  return listAutomations()
+}
+
+export function removeAutomationSound(id: unknown, soundId: unknown): Automation[] {
+  const { workspace, automation } = find(id)
+  const sound = automation.sounds?.find((item) => item.id === soundId)
+  if (!sound) throw new Error('Sound not found.')
+  automation.sounds = automation.sounds!.filter((item) => item !== sound)
+  save(workspace)
+  rmSync(join(soundsPath(workspace, automation.id), sound.fileName), { force: true })
+  return listAutomations()
+}
+
+/** Fork: a data URL to preview a sound (no file protocol access needed). */
+export function automationSoundPreview(id: unknown, soundId: unknown): string {
+  const { workspace, automation } = find(id)
+  const sound = automation.sounds?.find((item) => item.id === soundId)
+  if (!sound) throw new Error('Sound not found.')
+  const bytes = readFileSync(join(soundsPath(workspace, automation.id), sound.fileName))
+  return `data:${SOUND_MIME[extname(sound.fileName)] ?? 'audio/mpeg'};base64,${bytes.toString('base64')}`
+}
+
+/** Fork: the engine's `sfx` config for a job made for this automation, or null when off. */
+export function automationSfxConfig(id: string): { sounds: { path: string; name: string; kind: string; volume: number }[]; intensity: string; keep_speech_clear: boolean } | null {
+  let found: ReturnType<typeof find>
+  try { found = find(id) } catch { return null }
+  const { workspace, automation } = found
+  const settings = automation.soundSettings
+  const sounds = (automation.sounds ?? []).filter((sound) => sound.enabled)
+  if (!settings?.aiPlace || !sounds.length) return null
+  const directory = soundsPath(workspace, automation.id)
+  return {
+    sounds: sounds.map((sound) => ({ path: join(directory, sound.fileName), name: sound.name, kind: sound.kind, volume: sound.volume })).filter((sound) => existsSync(sound.path)),
+    intensity: settings.intensity,
+    keep_speech_clear: settings.keepSpeechClear
+  }
+}
+
+const fedJobs = new Set<string>()
+
+/**
+ * Fork: a finished job made for an automation adds its clips to that bank, in
+ * source-timeline order. Retries briefly while the automation is busy.
+ */
+export async function feedAutomationFromJob(snapshot: JobSnapshot): Promise<void> {
+  const automationId = snapshot.request.automationId
+  if (!automationId || snapshot.status !== 'completed' || !snapshot.output || snapshot.request.workflow === 'review' || fedJobs.has(snapshot.id)) return
+  fedJobs.add(snapshot.id)
+  const indices = [...snapshot.output.clips].sort((a, b) => a.start_time_ms - b.start_time_ms).map((clip) => clip.clip_index)
+  for (let start = 0; start < indices.length; start += 30) {
+    for (let attempt = 0; ; attempt++) {
+      try { await addLibraryClipsToAutomation(automationId, snapshot.outputDir, indices.slice(start, start + 30)); break }
+      catch (error) {
+        if (attempt < 5 && error instanceof Error && /Wait for the current/.test(error.message)) { await new Promise((resolve) => setTimeout(resolve, 3000)); continue }
+        logger.warn('automation.feed.failed', { jobId: snapshot.id, message: error instanceof Error ? error.message.slice(0, 200) : 'unknown' })
+        return
+      }
+    }
+  }
+  logger.info('automation.feed.added', { jobId: snapshot.id, clips: indices.length })
+}
+
+/** Fork: title and caption from the automation's text template; {title} stays the clip's original title. */
+function templateItem(template: TextTemplate, item: AutomationContent, n: number): void {
+  const base = item.templateBase ?? item.title
+  const result = applyTextTemplate(template, base, n)
+  item.templateBase = base
+  item.title = result.title || base
+  item.caption = result.caption || item.title
+}
+
+/** Fork: save (or clear with null) the automation's text template. */
+export function setAutomationTextTemplate(id: unknown, raw: unknown): Automation[] {
+  const { workspace, automation } = find(id)
+  if (busy.has(automation.id)) throw new Error('Wait for the current operation to finish.')
+  if (raw !== null && !isTextTemplate(raw)) throw new Error('Check the text template: limits, emoji and templates.')
+  const previous = automation.textTemplate
+  automation.textTemplate = raw as TextTemplate | null
+  try { save(workspace) } catch (error) { automation.textTemplate = previous; throw error }
+  return listAutomations()
+}
+
+/**
+ * Fork: apply the text template to queued clips (all, or the given ids).
+ * Clips already submitted, posting, holding a draft, or approved for TikTok
+ * (their approved caption is what TikTok gets) are left as they are.
+ */
+export function applyAutomationTextTemplate(id: unknown, contentIds: unknown): { automations: Automation[]; applied: number; skipped: number } {
+  const { workspace, automation } = find(id)
+  if (busy.has(automation.id)) throw new Error('Wait for the current operation to finish.')
+  const template = automation.textTemplate
+  if (!template) throw new Error('Save a text template first.')
+  if (contentIds !== null && (!Array.isArray(contentIds) || contentIds.length > MAX_TOTAL_CONTENT || !contentIds.every((value) => typeof value === 'string' && UUID.test(value)))) throw new Error('Choose queued clips.')
+  const wanted = contentIds === null ? null : new Set(contentIds as string[])
+  const previous = automation.content.map((item) => ({ ...item }))
+  let applied = 0
+  let skipped = 0
+  let n = 0
+  for (const item of automation.content) {
+    const queued = canReorderContent(item)
+    if (queued) n++
+    if (wanted && !wanted.has(item.id)) continue
+    if (!queued || item.metadataDraft || item.tiktokApproval) { if (wanted || queued) skipped++; continue }
+    templateItem(template, item, n)
+    applied++
+  }
+  try { save(workspace) } catch (error) { automation.content = previous; throw error }
+  return { automations: listAutomations(), applied, skipped }
 }
 
 export function updateAutomationContent(id: unknown, contentId: unknown, raw: unknown): Automation[] {

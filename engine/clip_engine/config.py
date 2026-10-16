@@ -602,6 +602,8 @@ class Settings(BaseSettings):
     jev_visual_context: bool = False
     source_context_web_research: bool = False
     source_context_model: str = "google/gemini-3.8-flash"
+    # Fork: places sound effects in a rendered clip (one short call per clip).
+    sound_effects_model: str = "google/gemini-3.8-flash"
 
     # Security - API authentication
     bridgeclip_api_key: Optional[str] = None  # API key for authenticating incoming requests

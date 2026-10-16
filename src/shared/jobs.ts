@@ -1,6 +1,7 @@
 import type { RunDiagnostics } from './run-diagnostics'
 import type { PipelineStage } from './job-progress'
 import type { JobOutput } from './job-output'
+import type { StackStyle, TitleStyle } from './fork-layout'
 
 /** Options for one clipping run, as the Create wizard submits them. */
 export interface ClipJobRequest {
@@ -26,6 +27,12 @@ export interface ClipJobRequest {
   captionPreset: string
   /** Title card at the top of Automatic clips. Older requests default to shown. */
   includeTitle?: boolean
+  /** Fork: screen + webcam framing; absent or null keeps the stock layout. */
+  stackStyle?: StackStyle | null
+  /** Fork: title card look; absent is the stock white box. */
+  titleStyle?: TitleStyle
+  /** Fork: add the finished clips (in timeline order) to this automation's bank. */
+  automationId?: string
   startTimeSeconds: number | null
   endTimeSeconds: number | null
   bannerPlatform: string | null

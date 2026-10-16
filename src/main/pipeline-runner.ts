@@ -17,7 +17,7 @@ import type { OpenRouterModel } from '../shared/openrouter-models'
 import { finishRunRecord, type StoredRunStatus } from './run-history'
 import { resolveBinary } from './tools'
 
-export type ClipJobConfig = ClipJobRequest & { plannerCapabilities?: OpenRouterModel }
+export type ClipJobConfig = ClipJobRequest & { plannerCapabilities?: OpenRouterModel; forkEngine?: Record<string, unknown> }
 
 /**
  * Where a run's events go. The job manager passes its own sink so it can track
@@ -469,6 +469,8 @@ export function startClipJob(
     include_captions: config.includeCaptions,
     caption_preset: config.captionPreset,
     include_title: config.includeTitle ?? true,
+    // Fork: layout, title look and sound effects (see fork-engine.ts).
+    ...(config.forkEngine ?? {}),
     keyterms: vocabularyTerms(settings.customVocabulary),
     start_time_seconds: config.startTimeSeconds,
     end_time_seconds: config.endTimeSeconds,

@@ -15,7 +15,7 @@ import { getModelCatalog } from './openrouter-models'
 import { getYouTubePreview } from './youtube-preview'
 import { resolveBinary, supportsCaptionFilter } from './tools'
 import { automationEnhancementGroups, enhanceAutomationBatch, automationContentSource, enhanceAutomationContent, resolveAutomationMetadataDraft, addAutomationContent, addLibraryClipsToAutomation, createAutomation, deleteAutomation, isAutomationMedia, listAutomations, removeAutomationContent, runAutomation, updateAutomation, updateAutomationContent, approveAutomationTikTokReview, prepareAutomationTikTokReview } from './automations'
-import { acknowledgeAutomationWarnings, retryAutomationContent, dismissAutomationMetadataError, automationLibraryClip, reorderAutomationContent, reviewAutomationContent, showAutomationContentInFolder, setAutomationQueueOrder, sortAutomationQueueByTimeline } from './automations'
+import { acknowledgeAutomationWarnings, retryAutomationContent, dismissAutomationMetadataError, automationLibraryClip, reorderAutomationContent, reviewAutomationContent, showAutomationContentInFolder, setAutomationQueueOrder, sortAutomationQueueByTimeline, setAutomationTextTemplate, applyAutomationTextTemplate, addAutomationSounds, updateAutomationSounds, removeAutomationSound, automationSoundPreview } from './automations'
 import { libraryPostingStatus, libraryMetadataSource, enhanceLibraryMetadata } from './library-posting'
 import { libraryPostingSummary } from './library-posting'
 import { deleteLibraryClips, deleteLibraryRun, setLibraryFavorite, setLibraryPosted } from './library-management'
@@ -118,6 +118,22 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
   handle('automations:reorder', (_event, id: unknown, contentId: unknown, beforeId: unknown) => reorderAutomationContent(id, contentId, beforeId))
   handle('automations:setQueueOrder', (_event, id: unknown, orderedIds: unknown) => setAutomationQueueOrder(id, orderedIds))
   handle('automations:sortByTimeline', (_event, id: unknown) => sortAutomationQueueByTimeline(id))
+  handle('automations:setTextTemplate', (_event, id: unknown, template: unknown) => setAutomationTextTemplate(id, template))
+  handle('automations:applyTextTemplate', (_event, id: unknown, contentIds: unknown) => applyAutomationTextTemplate(id, contentIds))
+  handle('automations:addSounds', async (_event, id: unknown) => {
+    const window = getMainWindow()
+    if (!window) return listAutomations()
+    const result = await dialog.showOpenDialog(window, {
+      properties: ['openFile', 'multiSelections'],
+      title: 'Add sound effects',
+      filters: [{ name: 'Sounds', extensions: ['mp3', 'wav', 'ogg', 'm4a', 'aac'] }]
+    })
+    if (result.canceled) return listAutomations()
+    return addAutomationSounds(id, result.filePaths)
+  })
+  handle('automations:updateSounds', (_event, id: unknown, value: unknown) => updateAutomationSounds(id, value))
+  handle('automations:removeSound', (_event, id: unknown, soundId: unknown) => removeAutomationSound(id, soundId))
+  handle('automations:soundPreview', (_event, id: unknown, soundId: unknown) => automationSoundPreview(id, soundId))
   handle('automations:create', (_event, name: unknown) => createAutomation(name))
   handle('automations:update', (_event, id: unknown, update: unknown) => updateAutomation(id, update))
   handle('automations:delete', (_event, id: unknown) => deleteAutomation(id))

@@ -7,6 +7,8 @@ import { MAX_ENHANCEMENT_GUIDANCE, AUTOMATION_PLATFORMS, needsTikTokReview, next
 import { isPostableAccount, isValidProfileName } from '../../shared/zernio'
 import { AutomationTikTokReviewDialog } from '../components/AutomationTikTokReviewDialog'
 import { AutomationTikTokBatchReviewDialog } from '../components/AutomationTikTokBatchReviewDialog'
+import { TextTemplatePanel } from '../components/TextTemplatePanel'
+import { SoundEffectsPanel } from '../components/SoundEffectsPanel'
 import { ZernioStatusCheck } from '../components/ZernioStatusCheck'
 import { AutomationMetadataDialog } from '../components/AutomationMetadataDialog'
 import { PlatformIcon, platformName } from '../components/PlatformIcon'
@@ -717,6 +719,28 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                     </div>
                   </details>
                 </div>
+              </Panel>
+
+              <Panel padded={false}>
+                <details>
+                  <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-3.5 py-2 text-sm font-semibold text-ink">
+                    Text template
+                    <span className="text-2xs font-normal text-ink-subtle">{selected.textTemplate ? 'Title, caption and emoji rules saved' : 'Title, caption, emoji and length rules'}</span>
+                  </summary>
+                  <TextTemplatePanel key={selected.id} automation={selected} pickedIds={pickedIds} disabled={Boolean(busy) || dirty || Boolean(editing)}
+                    onUpdated={setAutomations} onNotice={(message, tone) => tone === 'error' ? setError(message) : setNotice(message)} />
+                </details>
+              </Panel>
+
+              <Panel padded={false}>
+                <details>
+                  <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-3.5 py-2 text-sm font-semibold text-ink">
+                    Sound effects
+                    <span className="text-2xs font-normal text-ink-subtle">{selected.sounds?.length ? `${selected.sounds.filter((sound) => sound.enabled).length} of ${selected.sounds.length} on${selected.soundSettings?.aiPlace === false ? ' · AI placement off' : ''}` : 'Faaah, vine boom… placed by AI'}</span>
+                  </summary>
+                  <SoundEffectsPanel key={selected.id} automation={selected} disabled={Boolean(busy)}
+                    onUpdated={setAutomations} onNotice={(message, tone) => tone === 'error' ? setError(message) : setNotice(message)} />
+                </details>
               </Panel>
 
               <Panel padded={false}>

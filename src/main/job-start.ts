@@ -10,6 +10,7 @@ import { assertPublicWebUrl } from './network-policy'
 import { validateJobConfig } from './validation'
 import { resolveAdvancedModels } from './openrouter-models'
 import { supportsCaptionFilter } from './tools'
+import { forkEngineConfig } from './fork-engine'
 import type { JobSnapshot } from '../shared/jobs'
 
 /** A passing engine check is reused briefly, so queuing several videos stays quick. */
@@ -30,6 +31,7 @@ export async function startClipJobRequest(request: unknown): Promise<StartJobRes
     if (config.clippingMode === 'advanced') {
       config.plannerCapabilities = await resolveAdvancedModels(config.plannerModel!, config.transcriptionModel!)
     }
+    config.forkEngine = forkEngineConfig(config)
     if (isWebUrl(config.videoUrl)) await assertPublicWebUrl(config.videoUrl)
     else assertMediaPath(config.videoUrl, loadSettings().outputDirectory)
     if (config.bannerChannelUrl) await assertPublicWebUrl(config.bannerChannelUrl)

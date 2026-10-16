@@ -11,9 +11,9 @@ import { logger, getLogFilePath, errorSummary } from './logger'
 import { authorizeMedia, isTrustedExternalUrl, openAuthorizedMedia } from './security'
 import { loadSettings } from './settings-store'
 import { cleanStaleWorkspaces, stopAllJobsForQuit } from './pipeline-runner'
-import { cancelQueuedJobsForQuit } from './job-manager'
+import { cancelQueuedJobsForQuit, onJobUpdate } from './job-manager'
 import { cancelZernioConnect } from './zernio/service'
-import { isAutomationMedia, startAutomationScheduler } from './automations'
+import { feedAutomationFromJob, isAutomationMedia, startAutomationScheduler } from './automations'
 import { sweepDeletingRuns } from './library-management'
 import { registerAssistant, type AssistantRuntime } from './assistant/ipc'
 
@@ -276,6 +276,8 @@ app.whenReady().then(() => {
   registerIpcHandlers(() => mainWindow)
   assistant = registerAssistant(() => mainWindow)
   const stopAutomations = startAutomationScheduler()
+  // Fork: jobs made for an automation add their finished clips to it.
+  onJobUpdate((snapshot) => { void feedAutomationFromJob(snapshot) })
   void sweepDeletingRuns()
   app.on('before-quit', stopAutomations)
   createWindow()

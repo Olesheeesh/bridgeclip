@@ -196,6 +196,46 @@ class Box:
         return [round(self.x, 4), round(self.y, 4), round(self.w, 4), round(self.h, 4)]
 
 
+@dataclass(frozen=True)
+class StackStyle:
+    """Fork: the user's framing for screen + webcam shots. None on a shot keeps the stock layout.
+
+    screen_ratio  share of the output height for the screen panel (0.4-0.85)
+    cam_position  bottom | top | off (off shows only the screen)
+    screen_fit    zoom (crop to the active area) | wide (crop less, blurred fill)
+                  | whole (the entire screen width, blurred fill)
+    cam_zoom      whole (the full webcam) | shoulders | face
+    cam_inset     share of the webcam box trimmed on each side, so a loose
+                  detection doesn't pull game pixels into the camera panel
+    """
+
+    screen_ratio: float = 0.72
+    cam_position: str = "bottom"
+    screen_fit: str = "wide"
+    cam_zoom: str = "whole"
+    cam_inset: float = 0.05
+
+    CAM_POSITIONS = ("bottom", "top", "off")
+    SCREEN_FITS = ("zoom", "wide", "whole")
+    CAM_ZOOMS = ("whole", "shoulders", "face")
+
+    @classmethod
+    def parse(cls, raw: Any) -> Optional["StackStyle"]:
+        """Validated style from untrusted JSON, or None for the stock layout."""
+        if not isinstance(raw, dict):
+            return None
+        ratio = raw.get("screen_ratio", cls.screen_ratio)
+        inset = raw.get("cam_inset", cls.cam_inset)
+        position = raw.get("cam_position", cls.cam_position)
+        fit = raw.get("screen_fit", cls.screen_fit)
+        zoom = raw.get("cam_zoom", cls.cam_zoom)
+        if (not isinstance(ratio, (int, float)) or isinstance(ratio, bool) or not 0.4 <= ratio <= 0.85
+                or not isinstance(inset, (int, float)) or isinstance(inset, bool) or not 0 <= inset <= 0.2
+                or position not in cls.CAM_POSITIONS or fit not in cls.SCREEN_FITS or zoom not in cls.CAM_ZOOMS):
+            raise ValueError("Invalid screen + camera layout")
+        return cls(float(ratio), position, fit, zoom, float(inset))
+
+
 @dataclass
 class FaceTrack:
     """One person's face across the frames of a shot."""
@@ -252,6 +292,8 @@ class ShotLayout:
     manual_from_crops: list[tuple[float, float, float, float]] = field(default_factory=list)
     manual_transition_start_ms: int = 0
     manual_transition_ms: int = 0
+    # Fork: user framing for screen_cam shots (see StackStyle); None = stock layout.
+    stack_style: Optional[StackStyle] = None
 
     def summary(self) -> dict:
         return {

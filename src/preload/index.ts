@@ -19,6 +19,8 @@ import type {
 import type { ClipMediaInfo, PostClipRequest, PostClipResult, PostProgress, PostRecord, PostsRefreshResult, TikTokCreatorInfo, TikTokLegalLink } from '../shared/zernio-posts'
 import type { ClipJobRequest, JobSnapshot } from '../shared/jobs'
 import type { MetadataEnhancement, AutomationSourceGroup, AutomationBatchResult, AutomationSourceContext, Automation, AutomationUpdate, AutomationTikTokReview, AutomationTikTokReviewUpdate } from '../shared/automations'
+import type { TextTemplate } from '../shared/fork-text-template'
+import type { AutomationSound, AutomationSoundSettings } from '../shared/automations'
 import type { LibraryClipPostingStatus, LibraryEnhancementOptions, LibraryRunPostingCounts } from '../shared/library-posting'
 import type { OpenRouterCatalog } from '../shared/openrouter-models'
 import type { UpdateState } from '../shared/updates'
@@ -140,6 +142,12 @@ export interface BridgeClipAPI {
     reorder: (id: string, contentId: string, beforeId: string | null) => Promise<Automation[]>
     setQueueOrder: (id: string, orderedIds: string[]) => Promise<Automation[]>
     sortByTimeline: (id: string) => Promise<{ automations: Automation[]; placed: number; unknown: number }>
+    setTextTemplate: (id: string, template: TextTemplate | null) => Promise<Automation[]>
+    applyTextTemplate: (id: string, contentIds: string[] | null) => Promise<{ automations: Automation[]; applied: number; skipped: number }>
+    addSounds: (id: string) => Promise<Automation[]>
+    updateSounds: (id: string, value: { sounds: AutomationSound[]; settings: AutomationSoundSettings }) => Promise<Automation[]>
+    removeSound: (id: string, soundId: string) => Promise<Automation[]>
+    soundPreview: (id: string, soundId: string) => Promise<string>
     enhancementGroups: (id: string) => Promise<AutomationSourceGroup[]>
     enhanceBatch: (id: string, contentIds: string[], key: string, guidance?: string) => Promise<AutomationBatchResult>
     source: (id: string, contentId: string) => Promise<AutomationSourceContext | null>
@@ -329,6 +337,12 @@ const api: BridgeClipAPI = {
     reorder: (id, contentId, beforeId) => ipcRenderer.invoke('automations:reorder', id, contentId, beforeId),
     setQueueOrder: (id, orderedIds) => ipcRenderer.invoke('automations:setQueueOrder', id, orderedIds),
     sortByTimeline: (id) => ipcRenderer.invoke('automations:sortByTimeline', id),
+    setTextTemplate: (id, template) => ipcRenderer.invoke('automations:setTextTemplate', id, template),
+    applyTextTemplate: (id, contentIds) => ipcRenderer.invoke('automations:applyTextTemplate', id, contentIds),
+    addSounds: (id) => ipcRenderer.invoke('automations:addSounds', id),
+    updateSounds: (id, value) => ipcRenderer.invoke('automations:updateSounds', id, value),
+    removeSound: (id, soundId) => ipcRenderer.invoke('automations:removeSound', id, soundId),
+    soundPreview: (id, soundId) => ipcRenderer.invoke('automations:soundPreview', id, soundId),
     enhancementGroups: (id) => ipcRenderer.invoke('automations:enhancementGroups', id),
     enhanceBatch: (id, contentIds, key, guidance) => ipcRenderer.invoke('automations:enhanceBatch', id, contentIds, key, guidance),
     source: (id, contentId) => ipcRenderer.invoke('automations:source', id, contentId),

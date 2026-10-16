@@ -37,7 +37,8 @@ from clip_engine.services.clip_editor import (
     subtract_intervals,
     window_words,
 )
-from clip_engine.services.layout_analyzer import ClipLayoutPlan, LayoutAnalyzer, LayoutType, ShotLayout
+from clip_engine.services.layout_analyzer import ClipLayoutPlan, LayoutAnalyzer, LayoutType, ShotLayout, StackStyle
+from clip_engine.services.sound_effects import SfxSettings, mix_filter, output_words, plan_placements
 from clip_engine.services.framing_trace import make_trace, save_trace
 from clip_engine.services.editorial_context import window_protection, record_prevented_cuts
 from clip_engine.services.editorial_review import review_retained_clip
@@ -74,6 +75,8 @@ LANDSCAPE_TITLE_FADE_S = 0.4
 MAX_OUTPUT_FPS = 60
 # Bound raster allocation even when a model ignores the requested title length.
 MAX_TITLE_CHARS = 120
+# Fork: title card looks. box is the stock white card.
+TITLE_STYLES = ("box", "none", "outline", "shadow")
 # Landscape H.264 bitrates (Mbps) by output height at 30 fps, after
 # YouTube's upload recommendations; 60 fps sources get 1.5x.
 LANDSCAPE_BITRATE_MBPS = {1080: 12, 1440: 20, 2160: 45}
@@ -120,6 +123,12 @@ class RenderRequest:
     # tight: cut dead air and filler words; natural: original timing.
     pacing: str = Pacing.TIGHT
     video_speed: float = 1.0
+    # Fork: user framing for screen + webcam shots (None = stock layout) and
+    # the title card look: box (stock) | none | outline | shadow.
+    stack_style: Optional[StackStyle] = None
+    title_style: str = "box"
+    # Fork: sound effects placed by AI and mixed under the clip (None = off).
+    sfx: Optional[SfxSettings] = None
     # Longform episode (16:9, 5+ min): gentler pacing, SRT sidecar, and the
     # planner's skips (source ms, cut at any pacing) and chapters (source ms).
     longform: bool = False
@@ -370,6 +379,10 @@ class RenderingService:
                 shots=[ShotLayout(0, window_ms, LayoutType.SCREEN, source="style")],
                 source_width=source_w, source_height=source_h, face_samples=face_samples,
             )
+        if request.stack_style is not None and request.manual_plan is None:
+            # Fork: the user's screen + webcam framing; other layouts ignore it.
+            for shot in plan.shots:
+                shot.stack_style = request.stack_style
 
         if request.manual_plan is not None:
             ranges = request.manual_ranges_ms
@@ -567,6 +580,17 @@ class RenderingService:
         filter_complex, extra_inputs = self._compose_overlays(
             graph, overlays, speed_video_filter(request.video_speed, fps),
         )
+        audio_label = "[aout]" if has_audio else None
+        sound_inputs: list[str] = []
+        if request.sfx is not None and has_audio:
+            # Fork: AI-placed sound effects, on the edited clock, mixed under the speech.
+            words = output_words(remap_segments(request.transcript_segments or [], window_start_ms, time_map), window_start_ms)
+            placements = await plan_placements(request.sfx, words, time_map.output_ms,
+                                               self.settings.openrouter_api_key, self.settings.sound_effects_model)
+            sound_inputs, sfx_graph, audio_label = mix_filter(placements, request.sfx, 1 + len(extra_inputs), request.video_speed)
+            filter_complex += sfx_graph
+            if request.progress_callback and placements:
+                request.progress_callback(f'Added {len(placements)} sound effects', None)
 
         try:
             await self._run_ffmpeg_complex(
@@ -575,7 +599,8 @@ class RenderingService:
                 start_time_ms=window_start_ms,
                 duration_ms=window_ms,
                 filter_complex=filter_complex,
-                audio_label="[aout]" if has_audio else None,
+                audio_label=audio_label,
+                audio_inputs=sound_inputs or None,
                 extra_inputs=extra_inputs if extra_inputs else None,
                 fps=fps,
                 output_size=(target_width, target_height),
@@ -775,7 +800,7 @@ class RenderingService:
             os.path.dirname(request.output_path),
             f"title-{request.start_time_ms}-{request.end_time_ms}.png",
         )
-        result = self._build_title_card(request.title_text, target_width, 0, path, scale)
+        result = self._build_title_card(request.title_text, target_width, 0, path, scale, request.title_style)
         if not result:
             return None
         return path, result["width"], result["height"]
@@ -948,8 +973,12 @@ class RenderingService:
         overlay_y: int,
         output_path: str,
         scale: float = 1.0,
+        style: str = "box",
     ) -> Optional[dict]:
-        """Generate a rounded-rect PNG with title text and return positioning info."""
+        """Generate a rounded-rect PNG with title text and return positioning info.
+
+        Fork: `style` none / outline / shadow draws the text without the white box.
+        """
         # The planner is asked for 2-7 words; a runaway model title would
         # otherwise be rasterized at full length (a 20k character title is a
         # 1.4M px wide image and hundreds of MB before FFmpeg rejects it).
@@ -999,18 +1028,30 @@ class RenderingService:
         img = Image.new("RGBA", (img_w, img_h), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
 
-        draw.rounded_rectangle(
-            [(0, 0), (img_w - 1, img_h - 1)],
-            radius=corner_radius,
-            fill=(255, 255, 255, 242),
-        )
+        if style not in TITLE_STYLES or style == "box":
+            draw.rounded_rectangle(
+                [(0, 0), (img_w - 1, img_h - 1)],
+                radius=corner_radius,
+                fill=(255, 255, 255, 242),
+            )
 
+        stroke = max(2, round(4 * scale))
         for i, line in enumerate(lines):
             bbox = temp_draw.textbbox((0, 0), line, font=font)
             tw = bbox[2] - bbox[0]
             x = (img_w - tw) // 2
             y = pad_y + i * line_spacing
-            draw.text((x, y), line, font=font, fill=(0, 0, 0, 255))
+            if style == "none":
+                # Soft drop shadow keeps white text readable on bright gameplay.
+                draw.text((x + stroke // 2, y + stroke), line, font=font, fill=(0, 0, 0, 170))
+                draw.text((x, y), line, font=font, fill=(255, 255, 255, 255))
+            elif style == "outline":
+                draw.text((x, y), line, font=font, fill=(255, 255, 255, 255), stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
+            elif style == "shadow":
+                draw.text((x, y + stroke), line, font=font, fill=(0, 0, 0, 255), stroke_width=stroke, stroke_fill=(0, 0, 0, 255))
+                draw.text((x, y), line, font=font, fill=(255, 213, 0, 255), stroke_width=max(1, stroke // 2), stroke_fill=(0, 0, 0, 255))
+            else:
+                draw.text((x, y), line, font=font, fill=(0, 0, 0, 255))
 
         img.save(output_path, "PNG")
 
@@ -1087,6 +1128,7 @@ class RenderingService:
         extra_inputs: Optional[list[str]] = None,
         fps: str = "30",
         output_size: tuple[int, int] = (1080, 1920),
+        audio_inputs: Optional[list[str]] = None,
         output_duration_ms: Optional[int] = None,
         progress=None,
     ) -> None:
@@ -1112,6 +1154,9 @@ class RenderingService:
 
         for extra in (extra_inputs or []):
             cmd.extend(["-loop", "1", "-protocol_whitelist", "file,pipe,fd", "-i", extra])
+        # Fork: sound-effect files, indexed after the looped overlay images.
+        for sound in (audio_inputs or []):
+            cmd.extend(["-protocol_whitelist", "file", "-i", sound])
 
         cmd.extend([
             "-filter_complex", filter_complex,

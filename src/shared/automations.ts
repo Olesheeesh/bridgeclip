@@ -1,5 +1,6 @@
 import type { ZernioPlatform } from './zernio'
 import type { ClipMediaInfo, TikTokCreatorInfo, TikTokPostOptions, YouTubeVisibility } from './zernio-posts'
+import type { TextTemplate } from './fork-text-template'
 
 /** TikTok clips require review before the scheduler can publish them. */
 export const AUTOMATION_PLATFORMS = ['instagram', 'youtube', 'twitter', 'facebook', 'linkedin', 'threads', 'tiktok'] as const satisfies readonly ZernioPlatform[]
@@ -103,6 +104,8 @@ export interface AutomationContent {
   tiktokApproval?: AutomationTikTokApproval | null
   /** Keeps the last reviewed copy when approval is revoked to reopen the editor. */
   tiktokDraftCaption?: string | null
+  /** Fork: the clip's title before a text template first changed it ({title} in templates). */
+  templateBase?: string
   status: AutomationContentStatus
   addedAt: string
   postedAt: string | null
@@ -152,6 +155,46 @@ export interface Automation {
   lastRunAt: string | null
   lastError: string | null
   lastErrorAcknowledged?: boolean
+  /** Fork: title/caption rules and render look for this automation. */
+  textTemplate?: TextTemplate | null
+  /** Fork: sound-effect library used when rendering jobs made for this automation. */
+  sounds?: AutomationSound[]
+  soundSettings?: AutomationSoundSettings
+}
+
+export const SOUND_KINDS = ['reaction', 'impact', 'transition', 'other'] as const
+export type SoundKind = (typeof SOUND_KINDS)[number]
+export const SOUND_INTENSITIES = ['subtle', 'normal', 'wild'] as const
+export type SoundIntensity = (typeof SOUND_INTENSITIES)[number]
+
+export interface AutomationSound {
+  id: string
+  name: string
+  /** Stored as `${id}${ext}` in this automation's sound folder. */
+  fileName: string
+  kind: SoundKind
+  /** 0-1.5; 1 is the file's own loudness. */
+  volume: number
+  enabled: boolean
+}
+
+export interface AutomationSoundSettings {
+  /** Let AI place the enabled sounds before rendering. */
+  aiPlace: boolean
+  intensity: SoundIntensity
+  /** Put sounds in pauses only, never over words. */
+  keepSpeechClear: boolean
+}
+
+export const DEFAULT_SOUND_SETTINGS: AutomationSoundSettings = { aiPlace: true, intensity: 'normal', keepSpeechClear: true }
+
+/** Fork: best guess at a sound's role from its name; the user can change it. */
+export function guessSoundKind(name: string): SoundKind {
+  const n = name.toLowerCase()
+  if (/boom|explo|bang|punch|hit|slam|thud|bonk/.test(n)) return 'impact'
+  if (/whoosh|swoosh|swipe|scratch|transition|rewind/.test(n)) return 'transition'
+  if (/fa+h|bruh|wow|laugh|oof|huh|what|omg|scream|sad|violin|cry|ding|airhorn/.test(n)) return 'reaction'
+  return 'other'
 }
 
 export function hasContentWarnings(item: AutomationContent): boolean {

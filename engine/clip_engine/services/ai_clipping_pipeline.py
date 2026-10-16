@@ -44,6 +44,9 @@ from clip_engine.services.memory_monitor import (
     force_gc,
     log_memory_usage,
 )
+from clip_engine.services.layout_analyzer import StackStyle
+from clip_engine.services.sound_effects import SfxSettings
+from clip_engine.services.rendering_service import TITLE_STYLES
 from clip_engine.services.rendering_service import (
     RenderRequest,
     RenderResult,
@@ -123,9 +126,18 @@ class ClippingJobRequest:
     video_speed: float = 1.0
     workflow: str = 'automatic'
     caption_preset: str = 'pop'
+    # Fork: screen + webcam framing (StackStyle JSON, None = stock) and title card look.
+    stack_style: Optional[dict] = None
+    title_style: str = 'box'
+    # Fork: sound effects (SfxSettings JSON with absolute file paths); None = off.
+    sfx: Optional[dict] = None
 
     def __post_init__(self):
         validate_video_speed(self.video_speed)
+        StackStyle.parse(self.stack_style)
+        SfxSettings.parse(self.sfx)
+        if self.title_style not in TITLE_STYLES:
+            raise ValueError("Invalid title style")
         # Blank means no request, so the run and its no-match error agree with the planner.
         self.clip_request = (self.clip_request or '').strip()[:MAX_CLIP_REQUEST_CHARS] or None
         if self.job_id is None:
@@ -652,6 +664,9 @@ class AIClippingPipeline:
                         debug_capture=request.debug_capture,
                         pacing=request.pacing,
                         video_speed=request.video_speed,
+                        stack_style=StackStyle.parse(request.stack_style),
+                        title_style=request.title_style,
+                        sfx=SfxSettings.parse(request.sfx),
                         longform=longform,
                         skip_ranges_ms=segment.skip_ranges_ms,
                         chapters=segment.chapters,
