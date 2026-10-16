@@ -512,6 +512,7 @@ class AIClippingPipeline:
                     save_edit_audit()
                 # One bounded search for overlooked moments, not repeated attempts to fill a quota.
                 if (not jev_enabled or discovery_pass == 2 or len(accepted) >= limit or not coherence_service.enabled
+                        or not getattr(self.settings, 'jev_replacement_search', False)
                         or not any(c['status'] == 'rejected' for c in edit_audit['candidates'])
                         or coherence_service.requests >= coherence_service.max_requests
                         or coherence_service.reserved_tokens >= coherence_service.token_budget

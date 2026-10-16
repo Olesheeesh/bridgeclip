@@ -600,6 +600,11 @@ class Settings(BaseSettings):
     # always runs Jev; automatic clipping uses it only when enabled.
     jev_enabled: bool = False
     jev_visual_context: bool = False
+    # Fork: after Jev rejects clips, a second planner pass re-reads the whole
+    # transcript to find replacements (about as costly as the first plan).
+    # Off: Jev only reviews and repairs; rejected clips are simply dropped.
+    # Set JEV_REPLACEMENT_SEARCH=true to bring the upstream behaviour back.
+    jev_replacement_search: bool = False
     source_context_web_research: bool = False
     source_context_model: str = "google/gemini-3.8-flash"
     # Fork: places sound effects in a rendered clip (one short call per clip).

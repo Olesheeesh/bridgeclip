@@ -77,8 +77,8 @@ def test_second_pass_targets_at_most_six_unproposed_spans():
     assert all(b - a >= 30000 for a, b in feedback['search_intervals'])
 
 
-@pytest.mark.parametrize('search_fails', [False, True])
-def test_pipeline_rediscovery_is_bounded_and_preserves_approved_clips(monkeypatch, tmp_path, search_fails):
+@pytest.mark.parametrize('search_fails,replacement_search', [(False, True), (True, True), (False, False)])
+def test_pipeline_rediscovery_is_bounded_and_preserves_approved_clips(monkeypatch, tmp_path, search_fails, replacement_search):
     from clip_engine.services import ai_clipping_pipeline as module
     from clip_engine.services.ai_clipping_pipeline import AIClippingPipeline, ClippingJobRequest, JobStatus
     from clip_engine.services.rendering_service import RenderingService, RenderResult
@@ -87,6 +87,8 @@ def test_pipeline_rediscovery_is_bounded_and_preserves_approved_clips(monkeypatc
     settings = module.get_settings()
     monkeypatch.setattr(settings, 'local_mode', True)
     monkeypatch.setattr(settings, 'jev_enabled', True)  # Rediscovery only follows Jev review.
+    # Fork: off by default, so Jev never re-reads the whole transcript for replacements.
+    monkeypatch.setattr(settings, 'jev_replacement_search', replacement_search)
     monkeypatch.setattr(settings, 'openrouter_api_key', 'fixture')
     monkeypatch.setattr(settings, 'local_output_dir', str(tmp_path / 'out'))
     monkeypatch.setattr(settings.__class__, 'temp_directory', property(lambda self: str(tmp_path / 'work')))
@@ -124,6 +126,11 @@ def test_pipeline_rediscovery_is_bounded_and_preserves_approved_clips(monkeypatc
     result = asyncio.run(pipeline.process_video(ClippingJobRequest(video_url='fixture.mp4', job_id='fixture', max_clips=2, auto_clip_count=False)))
     assert result.status == JobStatus.COMPLETED, result.error
     audit = json.loads((tmp_path / 'out/fixture/edit_audit.json').read_text())
+    if not replacement_search:
+        # The rejected clip is dropped; the planner runs once.
+        assert len(calls) == 1 and 'discovery' not in audit
+        assert sum(c['status'] == 'rendered' for c in audit['candidates']) == 1
+        return
     assert len(calls) == 2 and transcribe.await_count == 1 and download.await_count == 1
     assert len(audit['candidates']) == (2 if search_fails else 3)
     assert audit['discovery']['status'] == ('unavailable' if search_fails else 'completed')
@@ -268,5 +275,5 @@ def test_pipeline_second_pass_receives_the_saved_preferred_range(monkeypatch, tm
         seen.append(preferred_range)
         return real(entries, duration_ms, preferred_range)
     monkeypatch.setattr(module, 'discovery_feedback', spy)
-    test_pipeline_rediscovery_is_bounded_and_preserves_approved_clips(monkeypatch, tmp_path, False)
+    test_pipeline_rediscovery_is_bounded_and_preserves_approved_clips(monkeypatch, tmp_path, False, True)
     assert seen == [[None, None]]
