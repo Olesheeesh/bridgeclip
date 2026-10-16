@@ -109,6 +109,9 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
   const [postingError, setPostingError] = useState<string | null>(null)
   const [postedExpanded, setPostedExpanded] = useState(false)
   const [unpostedExpanded, setUnpostedExpanded] = useState(true)
+  const [heldExpanded, setHeldExpanded] = useState(true)
+  const [keeping, setKeeping] = useState<number | null>(null)
+  const [keepError, setKeepError] = useState<string | null>(null)
   const [statusRetry, setStatusRetry] = useState(0)
   const [sort, setSort] = useState<Sort>('score')
   const [weights, setWeights] = useState({ ...defaultWeights })
@@ -194,8 +197,23 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
   }, [output.clips, sort, weights, focusedClip, search])
 
   const statusByClip = new Map(postingStatus?.map((status) => [status.clipIndex, status]))
-  const unposted = clips.filter((clip) => statusByClip.get(clip.clip_index)?.state !== 'posted')
-  const posted = clips.filter((clip) => statusByClip.get(clip.clip_index)?.state === 'posted')
+  // Fork: clips Jev held back stay apart until the user keeps or deletes them.
+  const held = clips.filter((clip) => clip.jev_hold)
+  const unposted = clips.filter((clip) => !clip.jev_hold && statusByClip.get(clip.clip_index)?.state !== 'posted')
+  const posted = clips.filter((clip) => !clip.jev_hold && statusByClip.get(clip.clip_index)?.state === 'posted')
+  const keepClip = async (clipIndex: number): Promise<void> => {
+    if (!outputDir) return
+    setKeeping(clipIndex); setKeepError(null)
+    try {
+      if (typeof getApi().history.keepJevClip !== 'function') throw new Error('Restart MerveilleClip to keep held clips.')
+      await getApi().history.keepJevClip(outputDir, clipIndex)
+      const fresh = parseJobOutput(await getApi().history.getJob(outputDir))
+      if (fresh) onOutputChanged(fresh)
+      setUnpostedExpanded(true)
+    } catch (cause) {
+      setKeepError(errorMessage(cause, 'Could not keep this clip. Please try again.'))
+    } finally { setKeeping(null) }
+  }
   const visibleClips = filtering ? clips : [...(unpostedExpanded ? unposted : []), ...(postedExpanded ? posted : [])]
   const visibleIds = visibleClips.map((clip) => clip.clip_index).join(',')
   useEffect(() => {
@@ -274,7 +292,7 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
   const framingNotice = framingProblem(output, vertical)
   const analysisNotice = sourceAnalysisNotice(output)
 
-  const renderGrid = (items: ClipArtifact[]): React.JSX.Element => (
+  const renderGrid = (items: ClipArtifact[], footer?: (clip: ClipArtifact) => ReactNode): React.JSX.Element => (
         <div
           className={cn(
             'mt-4 grid gap-5',
@@ -284,8 +302,8 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
           )}
         >
           {items.map((clip) => (
+            <div key={clip.clip_index} className="flex min-w-0 flex-col gap-2">
             <ClipCard
-              key={clip.clip_index}
               clip={clip}
               postingStatus={statusByClip.get(clip.clip_index)}
               vertical={vertical}
@@ -306,6 +324,8 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
                 else setUnpostedExpanded(true)
               } : undefined}
             />
+            {footer?.(clip)}
+            </div>
           ))}
         </div>
   )
@@ -398,7 +418,7 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
           {/* Fork: one click to the batch size automations accept, in the order shown (Best first or Timeline). */}
           {visibleClips.length > MAX_BANK_BATCH && selected.size !== MAX_BANK_BATCH && (
             <Button variant="ghost" size="sm" disabled={deleting} title={`Select the first ${MAX_BANK_BATCH} clips in the order shown`}
-              onClick={() => setSelected(new Set(visibleClips.slice(0, MAX_BANK_BATCH).map((clip) => clip.clip_index)))}>
+              onClick={() => setSelected(new Set(visibleClips.filter((clip) => !clip.jev_hold).slice(0, MAX_BANK_BATCH).map((clip) => clip.clip_index)))}>
               Select {MAX_BANK_BATCH}
             </Button>
           )}
@@ -483,6 +503,19 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
           {postingError && <Callout tone="warning" className="mt-3">{postingError} Clips are listed together below.</Callout>}
           {configured && refreshError && !postingError && <Callout tone="warning" className="mt-3">{refreshError} Showing saved posting status.</Callout>}
           {!postingStatus && !postingError && <p role="status" className="mt-2 text-xs text-ink-muted">Checking posting history…</p>}
+          {held.length > 0 && <ClipGroup title="Held by Jev" count={held.length} expanded={heldExpanded} onToggle={() => setHeldExpanded((value) => !value)}>
+            <p className="mt-3 text-sm text-ink-muted">Jev didn't approve these clips. Watch each one, then keep it with the rest or delete it. They are not added to automations until you keep them.</p>
+            {keepError && <Callout tone="danger" className="mt-3">{keepError}</Callout>}
+            {renderGrid(held, (clip) => (
+              <div className="glass-tile rounded-xl p-3">
+                <ul className="space-y-1 text-xs text-ink-muted">
+                  {(clip.jev_hold?.reasons ?? []).map((reason) => <li key={reason}>{JEV_HOLD_REASONS[reason] ?? JEV_HOLD_REASONS.not_approved}</li>)}
+                </ul>
+                <Button size="sm" className="mt-2.5 min-h-11 w-full" icon={<Check className="h-3.5 w-3.5" />} loading={keeping === clip.clip_index}
+                  disabled={keeping !== null || deleting} onClick={() => void keepClip(clip.clip_index)}>Keep clip</Button>
+              </div>
+            ))}
+          </ClipGroup>}
           <ClipGroup title={postingStatus ? 'Not Posted' : 'Clips'} count={unposted.length} expanded={unpostedExpanded} onToggle={() => setUnpostedExpanded((value) => !value)}>
             {unposted.length ? renderGrid(unposted) : <p className="mt-3 text-sm text-ink-muted">All clips in this run have been posted.</p>}
           </ClipGroup>
@@ -510,6 +543,25 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
       />}
     </Page>
   )
+}
+
+/** Fork: what each Jev check means for the user, shown under a held clip. */
+const JEV_HOLD_REASONS: Record<string, string> = {
+  not_approved: 'Jev did not approve this clip.',
+  review_unavailable: "Jev couldn't check this clip (service unavailable).",
+  insufficient_or_failed_judgment: "Jev couldn't reach a confident answer.",
+  request_size_limit: 'Too long for Jev to check in one pass.',
+  not_sponsored: 'May contain an ad or sponsor read.',
+  sponsored_or_uncertain_promotion: 'May contain an ad or sponsor read.',
+  opening_context: 'Starts mid-story: the setup happens before the clip.',
+  self_contained: 'Hard to follow without the rest of the stream.',
+  complete_ending: 'Ends before the point or joke lands.',
+  logical_flow: 'Jumps between topics.',
+  faithful_to_source: 'Could change what was actually meant.',
+  title_supported: "The title doesn't match what's said.",
+  needs_visual_evidence: 'Relies on something only visible on screen.',
+  missing_transcript: 'No clear speech to check.',
+  evidence_limit: 'Too long for Jev to check in one pass.'
 }
 
 function ClipGroup({ title, count, expanded, onToggle, children }: { title: string; count: number; expanded: boolean; onToggle: () => void; children: ReactNode }): React.JSX.Element {

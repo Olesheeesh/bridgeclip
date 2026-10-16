@@ -59,7 +59,7 @@ export function JevSettings(): React.JSX.Element {
     </header>
     <div className="jev-body">
       <div className="jev-enable-row">
-        <div><h3 id="jev-enable-label">Jev for automatic clips <span className="jev-beta">Beta</span></h3><p id="jev-enable-description">Off by default. When on, each automatic clip needs Jev’s approval, which uses extra OpenRouter credit, and a run can end with fewer clips or none. Clips Jev rejects are dropped, not replaced, so the transcript is never read a second time. Review &amp; edit always uses Jev. Both workflows use your OpenRouter key.</p></div>
+        <div><h3 id="jev-enable-label">Jev for automatic clips <span className="jev-beta">Beta</span></h3><p id="jev-enable-description">Off by default. When on, each automatic clip needs Jev’s approval, which uses extra OpenRouter credit, and a run can end with fewer clips or none. Clips Jev rejects are not deleted: they wait in the Library under “Held by Jev” for you to keep or delete, and the transcript is never read a second time. Review &amp; edit always uses Jev. Both workflows use your OpenRouter key.</p></div>
         <button className="jev-switch" role="switch" aria-labelledby="jev-enable-label" aria-describedby="jev-enable-description" aria-checked={enabled} disabled={busy} onClick={() => { void save({ jevEnabled: enabled ? 'off' : 'on' }) }}><span /></button>
       </div>
       {!enabled && <p className="jev-off" role="status">Jev is off for automatic clipping, which uses the planner’s proposed clips and cuts without Jev checks or repairs. Review &amp; edit still uses Jev with the thresholds below.</p>}

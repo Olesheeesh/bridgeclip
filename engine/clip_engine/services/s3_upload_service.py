@@ -54,6 +54,8 @@ class ClipArtifact:
     chapters: Optional[list[dict]] = None
     subtitle_url: Optional[str] = None
     editorial: Optional[dict] = None
+    # Fork: Jev rejected this clip; the user decides whether to keep it.
+    jev_hold: Optional[dict] = None
 
 
 @dataclass

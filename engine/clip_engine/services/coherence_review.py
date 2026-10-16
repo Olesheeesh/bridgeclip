@@ -153,6 +153,33 @@ def policy_thresholds(settings=None):
         'evidence_threshold': EVIDENCE_PASS, 'cut_threshold': CUT_PASS}.items()}
 
 
+def hold_reasons(report, policy=None):
+    """Fork: why Jev rejected a clip, as check names (or the trace reason) for the Library."""
+    trace = (report or {}).get('coherence') or {}
+    reasons = []
+    if trace.get('reason') in ('sponsored_or_uncertain_promotion', 'needs_visual_evidence'):
+        reasons.append(trace['reason'])
+    attempts = trace.get('attempts') or []
+    last = attempts[-1] if attempts else {}
+    answers = {}
+    for key in ('judgment', 'policy_judgment'):
+        judgment = last.get(key) or {}
+        if judgment.get('status') == 'success':
+            answers.update(judgment.get('answers') or {})
+    for name, answer in answers.items():
+        if name == 'evidence':
+            sufficient = ((answer or {}).get('probabilities') or {}).get('sufficient')
+            if isinstance(sufficient, (int, float)) and sufficient < check_threshold('evidence', policy=policy):
+                reasons.append('needs_visual_evidence')
+        else:
+            value = (answer or {}).get('noul')
+            if isinstance(value, (int, float)) and value < check_threshold(name, policy.get('threshold', PASS) if policy else PASS, policy):
+                reasons.append(name)
+    if not reasons:
+        reasons.append(last.get('reason') or trace.get('reason') or 'not_approved')
+    return list(dict.fromkeys(str(r)[:64] for r in reasons))[:8]
+
+
 def check_threshold(name, default=PASS, policy=None):
     if policy is not None:
         key = {'not_sponsored': 'sponsor_threshold'}.get(name, name + '_threshold')

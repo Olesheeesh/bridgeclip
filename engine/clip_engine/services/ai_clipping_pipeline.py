@@ -11,6 +11,7 @@ Pipeline stages:
 """
 
 import asyncio
+import copy
 import errno
 import json
 import logging
@@ -30,7 +31,7 @@ from clip_engine.error_policy import NoClipCandidatesError, NoRequestedMomentsEr
 from clip_engine.services.source_context import SourceContextService, context_for_prompt, transcription_terms
 from clip_engine.services.editorial_evidence import discovery_feedback, overlaps
 from clip_engine.services.jev_service import JevService, MODEL as JEV_MODEL
-from clip_engine.services.coherence_review import CoherenceReviewer, CoherenceRejected, no_approved_clips_message
+from clip_engine.services.coherence_review import CoherenceReviewer, CoherenceRejected, hold_reasons, no_approved_clips_message
 from clip_engine.services.editorial_context import analyze_reactions, empty_report, repair_context_boundaries
 from clip_engine.services.editorial_vision import EditorialVision
 from clip_engine.services.editorial_review import protect_acknowledgments, review_duplicate_candidates, editorial_summary
@@ -468,6 +469,9 @@ class AIClippingPipeline:
                 return ClippingJobResult(job_id=job_id, status=JobStatus.COMPLETED, output=output,
                     processing_time_seconds=time.time() - start_time)
             accepted = []
+            # Fork: clips Jev rejects, rendered as planned for the user to judge.
+            held = []
+            keep_rejected = jev_enabled and getattr(self.settings, 'jev_keep_rejected', True)
             limit = getattr(self.intelligence_planner, 'discovery_limit', None) or request.max_clips or self.settings.max_clips_absolute
             pending = clip_plan.segments
             for discovery_pass in (1, 2):
@@ -490,6 +494,7 @@ class AIClippingPipeline:
                         entry['status'] = 'selection_limit'
                         save_edit_audit()
                         continue
+                    planned = copy.deepcopy(segment) if keep_rejected else None
                     if jev_enabled:
                         segment.start_time_ms, segment.end_time_ms = repair_context_boundaries(
                             segment.start_time_ms, segment.end_time_ms, segment.editorial, 0, round(video_duration * 1000), round(video_duration * 1000))
@@ -509,6 +514,11 @@ class AIClippingPipeline:
                                                               segment.start_time_ms, segment.end_time_ms, segment.editorial)
                     else:
                         entry['status'] = 'rejected'
+                        if planned is not None:
+                            planned.editorial = segment.editorial
+                            planned.jev_hold = {'reasons': hold_reasons(segment.editorial, reviewer.policy)}
+                            held.append(planned)
+                            entry['held_for_user'] = True
                     save_edit_audit()
                 # One bounded search for overlooked moments, not repeated attempts to fill a quota.
                 if (not jev_enabled or discovery_pass == 2 or len(accepted) >= limit or not coherence_service.enabled
@@ -548,6 +558,11 @@ class AIClippingPipeline:
                 save_edit_audit()
                 if not pending:
                     break
+            # Fork: held clips go after the approved ones, never overlapping them or each other.
+            for segment in held:
+                interval = [segment.start_time_ms, segment.end_time_ms]
+                if not any(overlaps(interval, [c.start_time_ms, c.end_time_ms]) for c in accepted):
+                    accepted.append(segment)
             clip_plan.segments = accepted
             clip_plan.total_clips = len(accepted)
             if not accepted:
@@ -730,7 +745,7 @@ class AIClippingPipeline:
             for entry in edit_audit['candidates']:
                 matched = next(((k, segment) for k, (_, _, segment) in enumerate(successes) if segment.editorial is entry['report']), None)
                 if matched:
-                    entry.update(status='rendered', clip_index=matched[0])
+                    entry.update(status='held' if entry.get('held_for_user') else 'rendered', clip_index=matched[0])
                 elif entry['status'] == 'accepted':
                     entry['status'] = 'rejected' if entry['report'].get('coherence', {}).get('status') == 'rejected' else 'render_failed'
             edit_audit['outcome'] = 'completed' if successes else 'no_approved_clips'
@@ -878,6 +893,7 @@ class AIClippingPipeline:
                         description=segment.description,
                         chapters=self._chapter_dicts(segment),
                         editorial=editorial_summary(segment.editorial),
+                        jev_hold=segment.jev_hold,
                     )
 
                 upload_tasks = [
@@ -1225,6 +1241,7 @@ class AIClippingPipeline:
                 chapters=self._chapter_dicts(segment),
                 subtitle_url=subtitle_url,
                 editorial=editorial_summary(segment.editorial),
+                jev_hold=segment.jev_hold,
             ))
 
             if progress: progress(i + 1, len(rendered_clips))

@@ -67,6 +67,9 @@ class ClipPlanSegment:
     subtitle_path: Optional[str] = None
     editorial: Optional[dict] = None
     moment: Optional[dict] = None
+    # Fork: set on a clip Jev rejected but kept for the user to decide
+    # ({"reasons": [...]}); rendered as planned, shown apart in the Library.
+    jev_hold: Optional[dict] = None
 
 
 @dataclass

@@ -5,7 +5,7 @@ import { promisify } from 'util'
 const execFileAsync = promisify(execFile)
 import { constants, existsSync, lstatSync, mkdirSync, realpathSync, renameSync, statSync, unlinkSync } from 'fs'
 import { open, readdir } from 'fs/promises'
-import { isAbsolute, join, relative, sep } from 'path'
+import { dirname, isAbsolute, join, relative, sep } from 'path'
 import { resolveBinary } from './tools'
 import { parseJobOutput, type JobOutput } from '../shared/job-output'
 import { readRunRecord } from './run-history'
@@ -30,6 +30,11 @@ export const LIBRARY_FAVORITE_FILE = '.bridgeclip-favorite'
 /** A run renamed for deletion; never listed, and removed at startup if a deletion was interrupted. */
 export const DELETING_RUN_PREFIX = '.deleting-'
 export const manualPostedFile = (clipIndex: number): string => `.bridgeclip-posted-${clipIndex}`
+/** Fork: marker for a clip Jev held back that the user chose to keep. */
+export const jevKeptFile = (clipIndex: number): string => `.merveille-jev-kept-${clipIndex}`
+export function isJevKept(outputDir: string, clipIndex: number): boolean {
+  try { return lstatSync(join(outputDir, jevKeptFile(clipIndex))).isFile() } catch { return false }
+}
 export function isManuallyPosted(outputDir: string, clipIndex: number): boolean {
   try {
     const marker = lstatSync(join(outputDir, manualPostedFile(clipIndex)))
@@ -65,6 +70,8 @@ async function readJobOutput(outputPath: string, libraryDir: string): Promise<{ 
     if (isAbsolute(rel) || rel === '..' || rel.startsWith(`..${sep}`) ||
         file.dev !== current.dev || file.ino !== current.ino) return null
     const data = parseJobOutput(JSON.parse(await handle.readFile('utf-8')))
+    // Fork: a held clip the user kept reads as an ordinary clip.
+    if (data) for (const clip of data.clips) if (clip.jev_hold && isJevKept(dirname(canonical), clip.clip_index)) clip.jev_hold = null
     return data ? { data, modified: file.mtime } : null
   } finally {
     await handle.close()

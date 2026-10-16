@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto'
 import { closeSync, constants, type Dirent, fstatSync, lstatSync, mkdtempSync, openSync, readSync, realpathSync, renameSync, rmSync, unlinkSync, writeFileSync } from 'fs'
 import { readdir, rm } from 'fs/promises'
 import { basename, dirname, isAbsolute, join, resolve } from 'path'
-import { DELETING_RUN_PREFIX, getJobOutput, isManuallyPosted, isRunFavorite, LIBRARY_FAVORITE_FILE, manualPostedFile, removeRunThumbnails } from './file-manager'
+import { DELETING_RUN_PREFIX, getJobOutput, isJevKept, isManuallyPosted, isRunFavorite, jevKeptFile, LIBRARY_FAVORITE_FILE, manualPostedFile, removeRunThumbnails } from './file-manager'
 import { logger } from './logger'
 import { parseJobOutput, type JobOutput } from '../shared/job-output'
 import { parseEditorProject } from '../shared/clip-editor'
@@ -113,6 +113,18 @@ export async function setLibraryPosted(outputDir: unknown, clipIndex: unknown, p
   return posted
 }
 
+/** Fork: keep a clip Jev held back, so it joins the run's ordinary clips. */
+export async function keepJevHeldClip(outputDir: unknown, clipIndex: unknown): Promise<boolean> {
+  if (!Number.isSafeInteger(clipIndex) || (clipIndex as number) < 0 || (clipIndex as number) > 999) throw new Error('Choose a clip to keep.')
+  const { check } = await checkedRun(outputDir)
+  const run = check()
+  const output = parseJobOutput(readRunJson(run, 'job_output.json'))
+  const clip = output?.clips.find((item) => item.clip_index === clipIndex)
+  if (!clip) throw new Error('This clip is no longer in the run.')
+  if (clip.jev_hold && !isJevKept(run, clipIndex as number)) writeFileSync(join(run, jevKeptFile(clipIndex as number)), '', { flag: 'wx', mode: 0o600 })
+  return true
+}
+
 /** Keep the complete persisted metadata, including fields not exposed to React. */
 function readRunJson(run: string, name: string): Record<string, unknown> {
   const path = join(run, name)
@@ -163,6 +175,7 @@ export async function deleteLibraryClips(outputDir: unknown, indices: unknown): 
     // Sidecars written next to each clip: framing, captions and upload notes.
     for (const suffix of ['.framing.json', '.srt', '.youtube.txt']) include(join(run, `${name}${suffix}`))
     include(join(run, manualPostedFile(clip.clip_index)))
+    include(join(run, jevKeptFile(clip.clip_index)))
   }
   const changes: [string, Record<string, unknown>][] = []
   if (output.editor_project) {

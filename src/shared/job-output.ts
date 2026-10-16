@@ -15,6 +15,8 @@ export interface ClipArtifact {
   tags: string[]
   /** Set when smart framing failed and a letterbox fallback produced the clip. */
   render_fallback: string | null
+  /** Fork: Jev rejected this clip; it waits for the user to keep or delete it. Null once kept. */
+  jev_hold?: { reasons: string[] } | null
 }
 
 export interface JobOutput {
@@ -158,6 +160,12 @@ function safeMetrics(value: unknown): Record<string, unknown> | null {
   return result
 }
 
+function parseJevHold(value: unknown): { reasons: string[] } | null {
+  if (!record(value) || !Array.isArray(value.reasons)) return null
+  const reasons = value.reasons.filter((reason): reason is string => typeof reason === 'string' && /^[a-z_]{1,64}$/.test(reason)).slice(0, 8)
+  return { reasons: reasons.length ? reasons : ['not_approved'] }
+}
+
 /** Validate external and persisted pipeline output before it reaches React. */
 export function parseJobOutput(value: unknown): JobOutput | null {
   if (!record(value) || !Array.isArray(value.clips) || value.clips.length > 1000) return null
@@ -181,7 +189,8 @@ export function parseJobOutput(value: unknown): JobOutput | null {
       layout_type: typeof item.layout_type === 'string' && ['talking_head', 'two_shot', 'screen_cam', 'screen', 'fit', 'center_crop'].includes(item.layout_type) ? item.layout_type : '',
       summary: boundedText(item.summary, 2048),
       tags: Array.isArray(item.tags) ? item.tags.filter((tag): tag is string => typeof tag === 'string').slice(0, 50).map((tag) => tag.slice(0, 64)) : [],
-      render_fallback: boundedText(item.render_fallback, 256)
+      render_fallback: boundedText(item.render_fallback, 256),
+      jev_hold: parseJevHold(item.jev_hold)
     })
   }
   return {

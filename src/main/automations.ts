@@ -780,7 +780,8 @@ export async function feedAutomationFromJob(snapshot: JobSnapshot): Promise<void
   const automationId = snapshot.request.automationId
   if (!automationId || snapshot.status !== 'completed' || !snapshot.output || snapshot.request.workflow === 'review' || fedJobs.has(snapshot.id)) return
   fedJobs.add(snapshot.id)
-  const indices = [...snapshot.output.clips].sort((a, b) => a.start_time_ms - b.start_time_ms).map((clip) => clip.clip_index)
+  // Fork: clips Jev held back wait for the user in the Library; they never auto-join a queue.
+  const indices = [...snapshot.output.clips].filter((clip) => !clip.jev_hold).sort((a, b) => a.start_time_ms - b.start_time_ms).map((clip) => clip.clip_index)
   for (let start = 0; start < indices.length; start += 30) {
     for (let attempt = 0; ; attempt++) {
       try { await addLibraryClipsToAutomation(automationId, snapshot.outputDir, indices.slice(start, start + 30)); break }

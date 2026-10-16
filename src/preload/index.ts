@@ -232,6 +232,8 @@ export interface BridgeClipAPI {
     /** Posted counts for many runs at once, for the Library list. */
     postingSummary: (outputDirs: string[]) => Promise<LibraryRunPostingCounts[]>
     setPosted: (outputDir: string, clipIndex: number, posted: boolean) => Promise<boolean>
+    /** Fork: keep a clip Jev held back. */
+    keepJevClip: (outputDir: string, clipIndex: number) => Promise<boolean>
     metadataSource: (outputDir: string, clipIndex: number) => Promise<AutomationSourceContext | null>
     enhanceMetadata: (outputDir: string, clipIndex: number, options: LibraryEnhancementOptions) => Promise<MetadataEnhancement>
     list: () => Promise<HistoryEntry[]>
@@ -410,6 +412,7 @@ const api: BridgeClipAPI = {
     postingStatus: (outputDir) => ipcRenderer.invoke('history:postingStatus', outputDir),
     postingSummary: (outputDirs) => ipcRenderer.invoke('history:postingSummary', outputDirs),
     setPosted: (outputDir, clipIndex, posted) => ipcRenderer.invoke('history:setPosted', outputDir, clipIndex, posted),
+    keepJevClip: (outputDir, clipIndex) => ipcRenderer.invoke('history:keepJevClip', outputDir, clipIndex),
     metadataSource: (outputDir, clipIndex) => ipcRenderer.invoke('history:metadataSource', outputDir, clipIndex),
     enhanceMetadata: (outputDir, clipIndex, options) => ipcRenderer.invoke('history:enhanceMetadata', outputDir, clipIndex, options),
     list: () => ipcRenderer.invoke('history:list'),

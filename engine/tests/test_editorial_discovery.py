@@ -162,7 +162,7 @@ def test_discovery_excludes_repaired_approved_footage():
 
 
 @pytest.mark.parametrize('mode', ['off', 'unavailable', 'on'])
-def test_automatic_jev_opt_out_skips_review_but_enabled_failures_do_not(monkeypatch, tmp_path, mode):
+def test_automatic_jev_opt_out_skips_review_but_enabled_failures_do_not(monkeypatch, tmp_path, mode, keep_rejected=False):
     from clip_engine.services import ai_clipping_pipeline as module
     from clip_engine.services.ai_clipping_pipeline import AIClippingPipeline, ClippingJobRequest, JobStatus
     from clip_engine.services.rendering_service import RenderingService, RenderResult
@@ -173,6 +173,7 @@ def test_automatic_jev_opt_out_skips_review_but_enabled_failures_do_not(monkeypa
     settings = module.get_settings()
     monkeypatch.setattr(settings, 'local_mode', True)
     monkeypatch.setattr(settings, 'jev_enabled', mode != 'off')
+    monkeypatch.setattr(settings, 'jev_keep_rejected', keep_rejected)
     monkeypatch.setattr(settings, 'jev_visual_context', True)
     monkeypatch.setattr(settings, 'openrouter_api_key', 'fixture')
     monkeypatch.setattr(settings, 'local_output_dir', str(tmp_path / 'out'))
@@ -277,3 +278,18 @@ def test_pipeline_second_pass_receives_the_saved_preferred_range(monkeypatch, tm
     monkeypatch.setattr(module, 'discovery_feedback', spy)
     test_pipeline_rediscovery_is_bounded_and_preserves_approved_clips(monkeypatch, tmp_path, False, True)
     assert seen == [[None, None]]
+
+
+def test_unverified_clips_are_held_for_the_user_instead_of_dropped(monkeypatch, tmp_path):
+    """Fork: with jev_keep_rejected (the default) a clip Jev cannot approve is
+    rendered as planned and marked, so the user decides; nothing is dropped."""
+    import json as _json
+    try:
+        test_automatic_jev_opt_out_skips_review_but_enabled_failures_do_not(monkeypatch, tmp_path, 'unavailable', keep_rejected=True)
+    except AssertionError:
+        pass  # The upstream expectations (job fails, nothing rendered) no longer hold.
+    output = _json.loads((tmp_path / 'out/fixture/job_output.json').read_text())
+    audit = _json.loads((tmp_path / 'out/fixture/edit_audit.json').read_text())
+    assert output['clips'], 'held clips must still be rendered'
+    assert all(clip['jev_hold'] and clip['jev_hold']['reasons'] for clip in output['clips'])
+    assert any(entry['status'] == 'held' for entry in audit['candidates'])
