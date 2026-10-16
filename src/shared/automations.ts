@@ -209,6 +209,53 @@ export function reorderQueuedContent(content: AutomationContent[], id: string, b
   return content.map((entry) => canReorderContent(entry) ? queue[index++] : entry)
 }
 
+/** Fork: put the queued slots in exactly this order. Submitted and uncertain items keep their positions. */
+export function setQueuedOrder(content: AutomationContent[], orderedIds: readonly string[]): AutomationContent[] {
+  const queue = content.filter(canReorderContent)
+  const byId = new Map(queue.map((item) => [item.id, item]))
+  if (orderedIds.length !== queue.length || new Set(orderedIds).size !== orderedIds.length || orderedIds.some((id) => !byId.has(id))) {
+    throw new Error('The queue changed. Refresh the queue and try again.')
+  }
+  let index = 0
+  return content.map((entry) => canReorderContent(entry) ? byId.get(orderedIds[index++])! : entry)
+}
+
+export type QueueMove = 'top' | 'up' | 'down' | 'bottom'
+
+/** Fork: queued ids after moving the picked ones; picked clips keep their order among themselves. */
+export function movedQueueOrder(content: readonly AutomationContent[], picked: readonly string[], to: QueueMove): string[] {
+  const order = content.filter(canReorderContent).map((item) => item.id)
+  const chosen = new Set(picked)
+  if (to === 'top') return [...order.filter((id) => chosen.has(id)), ...order.filter((id) => !chosen.has(id))]
+  if (to === 'bottom') return [...order.filter((id) => !chosen.has(id)), ...order.filter((id) => chosen.has(id))]
+  if (to === 'up') {
+    for (let i = 1; i < order.length; i++) {
+      if (chosen.has(order[i]) && !chosen.has(order[i - 1])) [order[i - 1], order[i]] = [order[i], order[i - 1]]
+    }
+  } else {
+    for (let i = order.length - 2; i >= 0; i--) {
+      if (chosen.has(order[i]) && !chosen.has(order[i + 1])) [order[i], order[i + 1]] = [order[i + 1], order[i]]
+    }
+  }
+  return order
+}
+
+/**
+ * Fork: queued ids in source-timeline order. Clips from the same source video
+ * stay together (sources keep the order they first appear in the queue) and
+ * run by where they start in that video. Clips without a known position go last.
+ */
+export function timelineQueueOrder(content: readonly AutomationContent[], position: (item: AutomationContent) => { source: string; startMs: number } | null): string[] {
+  const queue = content.filter(canReorderContent)
+  const sourceRank = new Map<string, number>()
+  const keyed = queue.map((item, index) => {
+    const at = position(item)
+    if (at && !sourceRank.has(at.source)) sourceRank.set(at.source, sourceRank.size)
+    return { id: item.id, index, rank: at ? sourceRank.get(at.source)! : Infinity, startMs: at?.startMs ?? 0 }
+  })
+  return keyed.sort((a, b) => a.rank - b.rank || a.startMs - b.startMs || a.index - b.index).map((entry) => entry.id)
+}
+
 /** Return due local slots, including a short grace period after wake/reopen. */
 export function dueSlots(times: readonly string[], timezone: string, now: number, graceMinutes = 5): { time: string; date: string }[] {
   const formatter = new Intl.DateTimeFormat('en-US', {

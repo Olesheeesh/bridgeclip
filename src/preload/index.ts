@@ -138,6 +138,8 @@ export interface BridgeClipAPI {
     libraryClip: (id: string, contentId: string) => Promise<LibraryClipTarget | null>
     showInFolder: (id: string, contentId: string) => Promise<boolean>
     reorder: (id: string, contentId: string, beforeId: string | null) => Promise<Automation[]>
+    setQueueOrder: (id: string, orderedIds: string[]) => Promise<Automation[]>
+    sortByTimeline: (id: string) => Promise<{ automations: Automation[]; placed: number; unknown: number }>
     enhancementGroups: (id: string) => Promise<AutomationSourceGroup[]>
     enhanceBatch: (id: string, contentIds: string[], key: string, guidance?: string) => Promise<AutomationBatchResult>
     source: (id: string, contentId: string) => Promise<AutomationSourceContext | null>
@@ -325,6 +327,8 @@ const api: BridgeClipAPI = {
     libraryClip: (id, contentId) => ipcRenderer.invoke('automations:libraryClip', id, contentId),
     showInFolder: (id, contentId) => ipcRenderer.invoke('automations:showInFolder', id, contentId),
     reorder: (id, contentId, beforeId) => ipcRenderer.invoke('automations:reorder', id, contentId, beforeId),
+    setQueueOrder: (id, orderedIds) => ipcRenderer.invoke('automations:setQueueOrder', id, orderedIds),
+    sortByTimeline: (id) => ipcRenderer.invoke('automations:sortByTimeline', id),
     enhancementGroups: (id) => ipcRenderer.invoke('automations:enhancementGroups', id),
     enhanceBatch: (id, contentIds, key, guidance) => ipcRenderer.invoke('automations:enhanceBatch', id, contentIds, key, guidance),
     source: (id, contentId) => ipcRenderer.invoke('automations:source', id, contentId),

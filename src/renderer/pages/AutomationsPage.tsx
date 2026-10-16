@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Draggable, Droppable, type DraggableProvided, type DropResult } from '@hello-pangea/dnd'
-import { Check, FolderOpen, GripVertical, Info, Pencil, Play, Plus, RefreshCw, Sparkles, Trash2, Workflow, X } from 'lucide-react'
-import { canReorderContent, reorderQueuedContent, hasAutomationWarnings, hasContentWarnings, hasEnhancedMetadata } from '../../shared/automations'
+import { ArrowDown, ArrowUp, Check, ChevronsDown, ChevronsUp, FolderOpen, GripVertical, Info, ListOrdered, Pencil, Play, Plus, RefreshCw, Sparkles, Trash2, Workflow, X } from 'lucide-react'
+import { canReorderContent, reorderQueuedContent, hasAutomationWarnings, hasContentWarnings, hasEnhancedMetadata, movedQueueOrder, setQueuedOrder, type QueueMove } from '../../shared/automations'
 import { MAX_ENHANCEMENT_GUIDANCE, AUTOMATION_PLATFORMS, needsTikTokReview, nextAutomationContent, type Automation, type AutomationContent, type AutomationContentStatus, type AutomationUpdate, type AutomationSourceGroup } from '../../shared/automations'
 import { isPostableAccount, isValidProfileName } from '../../shared/zernio'
 import { AutomationTikTokReviewDialog } from '../components/AutomationTikTokReviewDialog'
@@ -14,6 +14,7 @@ import { ActionMenu } from '../components/ui/ActionMenu'
 import { HoverCard } from '../components/ui/HoverCard'
 import { Badge, StatusDot } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { Checkbox } from '../components/ui/Checkbox'
 import { Callout } from '../components/ui/Callout'
 import { ConfirmDialog, type ConfirmRequest } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -112,6 +113,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
   const activeSourceGroup = sourceGroups?.find((group) => group.key === sourceGroupKey)
   const [tiktokReview, setTiktokReview] = useState<AutomationContent | null>(null)
   const [batchReview, setBatchReview] = useState<AutomationContent[] | null>(null)
+  /** Fork: queued clips ticked for bulk moves. */
+  const [picked, setPicked] = useState<Set<string>>(() => new Set())
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const closeConfirm = useCallback(() => setConfirm(null), [])
   const selected = automations.find((automation) => automation.id === selectedId) ?? null
@@ -158,7 +161,29 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
     rememberSelection(automation?.id ?? null)
     setDraft(automation ? draftFor(automation) : null)
     setSourceGroups(null); setSourceGroupKey(''); setSourceGuidance({});
-    setEditing(null); setTiktokReview(null); setNewProfileOpen(false)
+    setEditing(null); setTiktokReview(null); setNewProfileOpen(false); setPicked(new Set())
+  }
+
+  // Fork: move one or several queued clips without dragging.
+  const moveQueue = async (ids: string[], to: QueueMove): Promise<void> => {
+    if (!selected || !ids.length || busy || dirty || editing || selected.content.some((item) => item.status === 'posting')) return
+    const previous = selected.content
+    const order = movedQueueOrder(previous, ids, to)
+    setAutomations((items) => items.map((item) => item.id === selected.id ? { ...item, content: setQueuedOrder(previous, order) } : item))
+    const result = await mutate('reorder', () => getApi().automations.setQueueOrder(selected.id, order))
+    if (!result) setAutomations((items) => items.map((item) => item.id === selected.id ? { ...item, content: previous } : item))
+  }
+
+  // Fork: same order as the library's Timeline sort, applied to the posting queue.
+  const sortQueueByTimeline = async (): Promise<void> => {
+    if (!selected) return
+    let counts = { placed: 0, unknown: 0 }
+    await mutate('sort-timeline', async () => {
+      const result = await getApi().automations.sortByTimeline(selected.id)
+      counts = result
+      return result.automations
+    })
+    if (counts.placed || counts.unknown) setNotice(`Queue sorted by timeline: ${counts.placed} ${counts.placed === 1 ? 'clip' : 'clips'} placed${counts.unknown ? ` · ${counts.unknown} without a known source position moved to the end` : ''}.`)
   }
 
   const mutate = async (action: string, request: () => Promise<Automation[]>, success?: string): Promise<Automation[] | null> => {
@@ -416,6 +441,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
     needs_review: selected?.content.filter((item) => item.status === 'needs_review' && hasContentWarnings(item)).length ?? 0
   }
   const reorderDisabled = Boolean(busy) || dirty || Boolean(editing) || Boolean(selected?.content.some((item) => item.status === 'posting'))
+  const queueIds = selected?.content.filter(canReorderContent).map((item) => item.id) ?? []
+  const pickedIds = queueIds.filter((id) => picked.has(id))
   const contentGroups = [
     { label: 'Queued', items: selected?.content.filter((item) => item.status === 'queued' || item.status === 'posting') ?? [], empty: 'No clips waiting to be submitted.' },
     { label: 'Needs attention', items: selected?.content.filter((item) => item.status === 'needs_review' && !item.warningsAcknowledged) ?? [], empty: '' },
@@ -695,6 +722,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
               <Panel padded={false}>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3.5 py-2">
                   <h2 className="mr-auto text-sm font-semibold text-ink" title="The first ready clip in queue order posts next. Drag queued clips to reorder them. Clips awaiting TikTok review are skipped.">Content bank</h2>
+                  {queueIds.length > 1 && <Button size="sm" variant="ghost" icon={<ListOrdered className="h-3 w-3" />} loading={busy === 'sort-timeline'} disabled={reorderDisabled}
+                    title="Order queued clips by where they start in their source video (like the library's Timeline sort)" onClick={() => void sortQueueByTimeline()}>Sort by timeline</Button>}
                   {counts.tiktok_review > 0 && <Button size="sm" variant="primary" icon={<Check className="h-3 w-3" />} disabled={Boolean(busy) || dirty || Boolean(editing)} title="Review every clip waiting for TikTok on one screen and approve them together"
                     onClick={() => setBatchReview(selected.content.filter((item) => item.status === 'queued' && !item.metadataDraft && needsTikTokReview(selected, item)))}>Review all for TikTok ({counts.tiktok_review})</Button>}
                   <Button size="sm" icon={<Plus className="h-3 w-3" />} loading={busy === 'upload'} onClick={() => void mutate('upload', () => getApi().automations.addContent(selected.id), 'Clips added to the bank.')} disabled={Boolean(busy)}>Add clips</Button>
@@ -719,12 +748,23 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                     <Button size="sm" disabled={Boolean(busy) || dirty} onClick={() => void enhanceQueued()}>Enhance {Math.min(30, activeSourceGroup?.contentIds.length ?? 0)} {activeSourceGroup?.contentIds.length === 1 ? 'clip' : 'clips'} from this video</Button>
                   </> : <p className="text-sm text-ink-muted">No queued clips need a new draft.</p>}
                 </div>}
+                {pickedIds.length > 0 && <div role="toolbar" aria-label="Move selected clips" className="flex flex-wrap items-center gap-1.5 border-t border-white/[0.06] bg-accent/[0.04] px-3.5 py-2">
+                  <span className="mr-1 text-xs text-ink">{pickedIds.length} selected</span>
+                  <Button size="sm" variant="secondary" icon={<ChevronsUp className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'top')}>To top</Button>
+                  <Button size="sm" variant="secondary" icon={<ArrowUp className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'up')}>Up</Button>
+                  <Button size="sm" variant="secondary" icon={<ArrowDown className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'down')}>Down</Button>
+                  <Button size="sm" variant="secondary" icon={<ChevronsDown className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'bottom')}>To bottom</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setPicked(new Set())}>Clear</Button>
+                </div>}
                 {bulkProgress && <Callout tone="info" className="mt-3" action={<Button size="sm" onClick={() => { stopBulk.current = true; setBulkProgress('Stopping after the current operation…') }}>Stop after batch</Button>}>{bulkProgress}</Callout>}
                 <DragDropContext key={selected.id} onBeforeCapture={() => { contentInteraction.current = true; refreshVersion.current++ }} onDragEnd={(result) => void moveContent(result)}>
                   {contentGroups.filter((group) => !['Needs attention', 'Held clips'].includes(group.label) || group.items.length > 0).map((group) => (
                     <section key={group.label} aria-label={group.label} className="border-t border-white/[0.06]">
                       <div className="flex flex-wrap items-center justify-between gap-2 bg-white/[0.02] px-3.5 py-2.5">
-                        <h3 className="flex items-center gap-2 text-xs font-semibold text-ink-muted">{group.label}<span className="tabular rounded-full bg-white/[0.06] px-2 py-0.5 text-2xs">{group.items.length}</span></h3>
+                        <h3 className="flex items-center gap-2 text-xs font-semibold text-ink-muted">
+                          {group.label === 'Queued' && queueIds.length > 0 && <Checkbox checked={pickedIds.length === queueIds.length} indeterminate={pickedIds.length > 0 && pickedIds.length < queueIds.length}
+                            onChange={() => setPicked(pickedIds.length === queueIds.length ? new Set() : new Set(queueIds))} label="Select all queued clips" />}
+                          {group.label}<span className="tabular rounded-full bg-white/[0.06] px-2 py-0.5 text-2xs">{group.items.length}</span></h3>
                         {group.label === 'Queued' && <span role="status" aria-label="Next posting slot" className="ml-auto text-right text-2xs text-ink-muted">
                           {!nextSlot ? 'No times scheduled' : !selected.enabled ? 'Paused' : <>Next slot <span className="text-ink">{nextSlot}</span><span className="text-ink-subtle"> · {selected.timezone.replace(/_/g, ' ')}</span></>}
                         </span>}
@@ -762,6 +802,10 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                                 onCheckPosts={() => onNavigate('posts')}
                                 onViewLibrary={() => void viewLibrary(item)}
                                 onShowInFolder={() => void showInFolder(item)}
+                                picked={picked.has(item.id)}
+                                onPick={(on) => setPicked((current) => { const next = new Set(current); if (on) next.add(item.id); else next.delete(item.id); return next })}
+                                onMove={(to) => void moveQueue([item.id], to)}
+                                moveDisabled={reorderDisabled}
                               />}
                             </Draggable>
                           ))}
@@ -885,7 +929,12 @@ function CreateForm({ busy, onCreate, onCancel, autoFocus, size = 'md', classNam
   )
 }
 
-function ContentRow({ item, nextUp, tiktokReviewNeeded, tiktokSelected, onReviewTikTok, reviewDisabled, editing, busy, onEdit, onChange, onSave, onReturnToQueue, onRefreshPost, onRemove, onCheckPosts, onViewLibrary, onShowInFolder, onEnhance, enhancementDisabled, enhanced, dragProvided, dragging, onDismissMetadataError, onDismissError, onRetry, retryDisabled }: {
+function ContentRow({ item, nextUp, tiktokReviewNeeded, tiktokSelected, onReviewTikTok, reviewDisabled, editing, busy, onEdit, onChange, onSave, onReturnToQueue, onRefreshPost, onRemove, onCheckPosts, onViewLibrary, onShowInFolder, onEnhance, enhancementDisabled, enhanced, dragProvided, dragging, onDismissMetadataError, onDismissError, onRetry, retryDisabled, picked, onPick, onMove, moveDisabled }: {
+  /** Fork: tick for bulk moves, and one-click up/down instead of dragging. */
+  picked: boolean
+  onPick: (picked: boolean) => void
+  onMove: (to: QueueMove) => void
+  moveDisabled: boolean
   item: AutomationContent
   nextUp: boolean
   tiktokReviewNeeded: boolean
@@ -922,6 +971,7 @@ function ContentRow({ item, nextUp, tiktokReviewNeeded, tiktokSelected, onReview
     <li ref={dragProvided.innerRef} {...dragProvided.draggableProps}
       className={cn('group/row list-none px-3.5 py-2.5', editing && 'bg-white/[0.025]', dragging && 'rounded-xl bg-raised shadow-pop ring-1 ring-accent/40')}>
       <div className="flex min-h-8 flex-wrap items-center gap-2">
+        {canReorderContent(item) && <Checkbox checked={picked} onChange={onPick} label={`Select ${item.title}`} />}
         {canReorderContent(item) && <span role="button" tabIndex={-1} aria-disabled={!dragProvided.dragHandleProps} {...dragProvided.dragHandleProps} aria-label={`Reorder ${item.title}`} title="Drag to reorder. Or press Space, use arrow keys, then Space to drop; Escape to cancel." className={cn('touch-none rounded p-1 text-ink-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent', dragProvided.dragHandleProps ? 'cursor-grab hover:bg-fill-hover hover:text-ink active:cursor-grabbing' : 'cursor-default opacity-40')}><GripVertical className="h-3.5 w-3.5" /></span>}
         <div className="flex min-w-0 flex-1 basis-48 items-center gap-2">
           <p className="truncate text-xs text-ink">{item.title}</p>
@@ -930,6 +980,10 @@ function ContentRow({ item, nextUp, tiktokReviewNeeded, tiktokSelected, onReview
           {nextUp && <Badge tone="accent" className="h-4 px-1.5 text-[10px]">Next up</Badge>}
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1">
+          {canReorderContent(item) && <>
+            <Button size="sm" variant="ghost" iconOnly icon={<ArrowUp className="h-3.5 w-3.5" />} aria-label={`Move ${item.title} up`} title="Move up (Shift+click: to top)" disabled={moveDisabled} onClick={(event) => onMove(event.shiftKey ? 'top' : 'up')} />
+            <Button size="sm" variant="ghost" iconOnly icon={<ArrowDown className="h-3.5 w-3.5" />} aria-label={`Move ${item.title} down`} title="Move down (Shift+click: to bottom)" disabled={moveDisabled} onClick={(event) => onMove(event.shiftKey ? 'bottom' : 'down')} />
+          </>}
           {item.status === 'queued' && !item.postId && item.error && <Button size="sm" variant="secondary" icon={<RefreshCw className="h-3 w-3" />} disabled={busy || retryDisabled || Boolean(item.metadataDraft)} onClick={onRetry} title="Retry this clip now, using the saved automation settings">Retry clip</Button>}
           {item.status === 'queued' && !item.postId && (item.metadataDraft || !enhanced) && <Button size="sm" variant="ghost" disabled={busy || (!item.metadataDraft && enhancementDisabled)} onClick={onEnhance}>{item.metadataDraft ? 'Review draft' : 'Enhance'}</Button>}
           {tiktokReviewNeeded && <Button size="sm" variant="secondary" onClick={onReviewTikTok} disabled={busy || reviewDisabled || Boolean(item.metadataDraft)}>Review TikTok</Button>}

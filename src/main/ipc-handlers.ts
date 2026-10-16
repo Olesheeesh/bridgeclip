@@ -15,7 +15,7 @@ import { getModelCatalog } from './openrouter-models'
 import { getYouTubePreview } from './youtube-preview'
 import { resolveBinary, supportsCaptionFilter } from './tools'
 import { automationEnhancementGroups, enhanceAutomationBatch, automationContentSource, enhanceAutomationContent, resolveAutomationMetadataDraft, addAutomationContent, addLibraryClipsToAutomation, createAutomation, deleteAutomation, isAutomationMedia, listAutomations, removeAutomationContent, runAutomation, updateAutomation, updateAutomationContent, approveAutomationTikTokReview, prepareAutomationTikTokReview } from './automations'
-import { acknowledgeAutomationWarnings, retryAutomationContent, dismissAutomationMetadataError, automationLibraryClip, reorderAutomationContent, reviewAutomationContent, showAutomationContentInFolder } from './automations'
+import { acknowledgeAutomationWarnings, retryAutomationContent, dismissAutomationMetadataError, automationLibraryClip, reorderAutomationContent, reviewAutomationContent, showAutomationContentInFolder, setAutomationQueueOrder, sortAutomationQueueByTimeline } from './automations'
 import { libraryPostingStatus, libraryMetadataSource, enhanceLibraryMetadata } from './library-posting'
 import { libraryPostingSummary } from './library-posting'
 import { deleteLibraryClips, deleteLibraryRun, setLibraryFavorite, setLibraryPosted } from './library-management'
@@ -116,6 +116,8 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
   handle('automations:libraryClip', (_event, id: unknown, contentId: unknown) => automationLibraryClip(id, contentId))
   handle('automations:showInFolder', (_event, id: unknown, contentId: unknown) => showAutomationContentInFolder(id, contentId))
   handle('automations:reorder', (_event, id: unknown, contentId: unknown, beforeId: unknown) => reorderAutomationContent(id, contentId, beforeId))
+  handle('automations:setQueueOrder', (_event, id: unknown, orderedIds: unknown) => setAutomationQueueOrder(id, orderedIds))
+  handle('automations:sortByTimeline', (_event, id: unknown) => sortAutomationQueueByTimeline(id))
   handle('automations:create', (_event, name: unknown) => createAutomation(name))
   handle('automations:update', (_event, id: unknown, update: unknown) => updateAutomation(id, update))
   handle('automations:delete', (_event, id: unknown) => deleteAutomation(id))

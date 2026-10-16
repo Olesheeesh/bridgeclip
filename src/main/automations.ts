@@ -1,9 +1,9 @@
 import type { LibraryClipTarget } from '../shared/library-posting'
 import { app, shell } from 'electron'
 import { createHash, randomUUID } from 'crypto'
-import { createWriteStream, existsSync, lstatSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'fs'
+import { createWriteStream, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'fs'
 import { open, unlink } from 'fs/promises'
-import { basename, extname, join } from 'path'
+import { basename, dirname, extname, join } from 'path'
 import { pipeline } from 'stream/promises'
 import { MAX_ENHANCEMENT_GUIDANCE, MAX_RESEARCH_URL, needsTikTokReview, AUTOMATION_PLATFORMS, dueSlots, type Automation, type AutomationAccount, type AutomationContent, type AutomationUpdate, type GeneratedPlatformMetadata, type AutomationSourceContext, type MetadataEnhancement, type MetadataResearch, type AutomationSourceGroup, type AutomationBatchResult, nextAutomationContent, type AutomationTikTokReview, type AutomationTikTokReviewUpdate } from '../shared/automations'
 import { isPostableAccount, isZernioId, type ZernioOverview } from '../shared/zernio'
@@ -20,7 +20,8 @@ import { logger } from './logger'
 import { generateAutomationMetadata, transcribeAutomationClip, researchAutomationTopic, generateAutomationMetadataBatch, metadataFailureCode, type MetadataBatchClip } from './automation-metadata'
 
 import { completeSourceContext, findLibraryClipForClip, parseSourceContext, recoverSourceContext, sourceFromOutput, sourceResearchKey } from './automation-source'
-import { hasContentWarnings, reorderQueuedContent } from '../shared/automations'
+import { hasContentWarnings, reorderQueuedContent, setQueuedOrder, timelineQueueOrder } from '../shared/automations'
+import type { JobOutput } from '../shared/job-output'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TIME = /^(?:[01]\d|2[0-3]):[0-5]\d$/
@@ -603,6 +604,42 @@ export function reorderAutomationContent(id: unknown, contentId: unknown, before
   automation.content = reorderQueuedContent(previous, contentId, beforeId)
   try { save(workspace) } catch (error) { automation.content = previous; throw error }
   return listAutomations()
+}
+
+/** Fork: replace the queued order in one step (move several clips, sort by timeline). */
+export function setAutomationQueueOrder(id: unknown, orderedIds: unknown): Automation[] {
+  const { workspace, automation } = find(id)
+  if (busy.has(automation.id)) throw new Error('Wait for the current operation to finish.')
+  if (!Array.isArray(orderedIds) || orderedIds.length > MAX_TOTAL_CONTENT || !orderedIds.every((value) => typeof value === 'string' && UUID.test(value))) throw new Error('Choose queued clips to reorder.')
+  const previous = automation.content
+  automation.content = setQueuedOrder(previous, orderedIds as string[])
+  try { save(workspace) } catch (error) { automation.content = previous; throw error }
+  return listAutomations()
+}
+
+/** Fork: order the queue by where each clip starts in its source video (like the library's Timeline sort). */
+export async function sortAutomationQueueByTimeline(id: unknown): Promise<{ automations: Automation[]; placed: number; unknown: number }> {
+  const { automation } = find(id)
+  const library = loadSettings().outputDirectory
+  const outputs = new Map<string, JobOutput | null>()
+  const positions = new Map<string, { source: string; startMs: number }>()
+  for (const item of automation.content) {
+    if (!item.sourceClipPath) continue
+    const run = dirname(item.sourceClipPath)
+    if (!outputs.has(run)) {
+      try { outputs.set(run, await getJobOutput(run, isWithinDirectory(run, library) ? library : run)) } catch { outputs.set(run, null) }
+    }
+    const output = outputs.get(run)
+    const real = (path: string): string => { try { return realpathSync(path) } catch { return path } }
+    const target = real(item.sourceClipPath)
+    const clip = output?.clips.find((candidate) => real(candidate.s3_url.replace(/^file:\/\//, '')) === target)
+    if (clip) positions.set(item.id, { source: run, startMs: clip.start_time_ms })
+  }
+  const order = timelineQueueOrder(automation.content, (item) => positions.get(item.id) ?? null)
+  const automations = setAutomationQueueOrder(automation.id, order)
+  const queued = automation.content.filter((item) => item.status === 'queued' && !item.postId).length
+  const placed = automation.content.filter((item) => item.status === 'queued' && !item.postId && positions.has(item.id)).length
+  return { automations, placed, unknown: queued - placed }
 }
 
 export function updateAutomationContent(id: unknown, contentId: unknown, raw: unknown): Automation[] {
