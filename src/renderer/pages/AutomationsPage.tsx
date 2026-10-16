@@ -603,7 +603,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                       <p className="text-2xs text-ink-muted">
                         <span className="text-warning">Finish setup:</span> {LIST_FORMAT.format(setupTodo)}.
                       </p>
-                    ) : (
+                    ) : (<>
                       <p className="flex flex-wrap gap-x-1.5 text-2xs text-ink-muted">
                         <span><span className="tabular text-ink">{counts.ready}</span> ready</span>
                         {counts.tiktok_review > 0 && <><Sep /><span className="text-warning">{counts.tiktok_review} need TikTok review</span></>}
@@ -612,7 +612,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                         <Sep />
                         <span>Last run <span className="text-ink">{selected.lastRunAt ? formatRelativeDate(selected.lastRunAt) : 'never'}</span></span>
                       </p>
-                    )}
+                      {runway && <p className="text-2xs text-ink-muted">Lasts <span className="tabular text-ink">{runway.days} {runway.days === 1 ? 'day' : 'days'}</span> at {selected.times.length} a day, until <span className="text-ink">{runwayEnd}</span></p>}
+                    </>)}
                   </div>
                   <div className="flex items-center gap-1">
                     <label className={cn('mr-1 flex items-center gap-1.5 text-2xs text-ink-muted', !selected.enabled && !savedReady && 'opacity-60')} title={!selected.enabled && !savedReady ? 'Finish setup and save before turning this on' : undefined}>
@@ -890,7 +891,6 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                           {group.label}<span className="tabular rounded-full bg-hi/[0.06] px-2 py-0.5 text-2xs">{group.items.length}</span></h3>
                         {group.label === 'Queued' && <span role="status" aria-label="Next posting slot" className="ml-auto text-right text-2xs text-ink-muted">
                           {!nextSlot ? 'No times scheduled' : !selected.enabled ? 'Paused' : <>Next slot <span className="text-ink">{nextSlot}</span><span className="text-ink-subtle"> · {selected.timezone.replace(/_/g, ' ')}</span></>}
-                          {runway && <span className="block">Lasts <span className="tabular text-ink">{runway.days} {runway.days === 1 ? 'day' : 'days'}</span> at {selected.times.length} a day, until <span className="text-ink">{runwayEnd}</span></span>}
                         </span>}
                       </div>
                       {group.label === 'Held clips' && <p className="px-3.5 py-2 text-2xs text-ink-subtle">Warnings acknowledged. These clips stay out of the queue until you review and return them.</p>}
