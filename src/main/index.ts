@@ -74,7 +74,7 @@ if (!gotTheLock) {
 
 // Packaged builds take their icon from the .app / .exe. Dev runs the stock
 // Electron binary, so without this the dock and taskbar show the Electron atom.
-const devIcon = join(__dirname, '../../build/icon.png')
+const devIcon = join(__dirname, process.platform === 'win32' ? '../../build/icon.ico' : '../../build/icon.png')
 
 function refreshDevDockIcon(): void {
   if (is.dev && !hiddenForTests) app.dock?.setIcon(devIcon)
@@ -218,7 +218,9 @@ function registerStartMenuShortcut(): void {
 
 app.whenReady().then(() => {
   cleanStaleWorkspaces()
-  electronApp.setAppUserModelId('com.olesheeesh.bridgeclipfork')
+  // Fork: electronApp.setAppUserModelId swaps in electron.exe's path when unpackaged,
+  // so the taskbar grouped us under Electron's atom icon instead of the shortcut's.
+  app.setAppUserModelId('com.olesheeesh.bridgeclipfork')
   registerStartMenuShortcut()
   if (hiddenForTests) app.dock?.hide()
 
