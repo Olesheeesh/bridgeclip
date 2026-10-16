@@ -200,12 +200,14 @@ function registerStartMenuShortcut(): void {
   try {
     const link = join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'MerveilleClip.lnk')
     const root = app.getAppPath()
-    shell.writeShortcutLink(link, existsSync(link) ? 'update' : 'create', {
+    const exists = existsSync(link)
+    shell.writeShortcutLink(link, exists ? 'update' : 'create', {
       target: join(process.env.WINDIR ?? 'C:\\Windows', 'System32', 'wscript.exe'),
       args: `"${join(root, 'scripts', 'windows', 'launch-merveilleclip.vbs')}"`,
       cwd: root,
-      icon: join(root, 'build', 'icon.ico'),
-      iconIndex: 0,
+      // An update leaves the icon alone: install-shortcuts.ps1 points it at a
+      // hash-named copy so Windows redraws a changed logo instead of its cache.
+      ...(exists ? {} : { icon: join(root, 'build', 'icon.ico'), iconIndex: 0 }),
       description: 'MerveilleClip: turn long videos into vertical clips',
       appUserModelId: 'com.olesheeesh.bridgeclipfork'
     })

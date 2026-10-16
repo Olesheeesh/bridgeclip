@@ -4,7 +4,8 @@ import { cn } from '../../lib/utils'
 interface CheckboxProps {
   checked: boolean
   indeterminate?: boolean
-  onChange: (checked: boolean) => void
+  /** `range` is true for a Shift+click, so lists can select everything between two clicks. */
+  onChange: (checked: boolean, range: boolean) => void
   label: string
   disabled?: boolean
   /** `overlay` sits on video and needs its own frosted backing. */
@@ -21,9 +22,11 @@ export function Checkbox({ checked, indeterminate, onChange, label, disabled, va
       aria-checked={indeterminate ? 'mixed' : checked}
       aria-label={label}
       disabled={disabled}
+      // Shift+click would otherwise select the text between the two rows.
+      onMouseDown={(e) => { if (e.shiftKey) e.preventDefault() }}
       onClick={(e) => {
         e.stopPropagation()
-        onChange(!checked)
+        onChange(!checked, e.shiftKey)
       }}
       className={cn(
         'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[6px] transition-[background,box-shadow] duration-150',

@@ -117,6 +117,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
   const [batchReview, setBatchReview] = useState<AutomationContent[] | null>(null)
   /** Fork: queued clips ticked for bulk moves. */
   const [picked, setPicked] = useState<Set<string>>(() => new Set())
+  // Fork: the last row ticked by hand, so Shift+click can tick every row between it and the next one.
+  const pickAnchor = useRef<string | null>(null)
   // Fork: find clips in the content bank by title or caption.
   const [contentQuery, setContentQuery] = useState('')
   // Fork: the All / Ready / Submitted filter with counts, as in BridgeClip.
@@ -474,6 +476,16 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
   const reorderDisabled = Boolean(busy) || dirty || Boolean(editing) || Boolean(selected?.content.some((item) => item.status === 'posting'))
   const queueIds = selected?.content.filter(canReorderContent).map((item) => item.id) ?? []
   const pickedIds = queueIds.filter((id) => picked.has(id))
+  // Fork: Shift+click sets every selectable row between the last clicked row and this one, as on a desktop list.
+  const pickRows = (rows: AutomationContent[], id: string, on: boolean, range: boolean): void => {
+    const from = range && pickAnchor.current ? rows.findIndex((row) => row.id === pickAnchor.current) : -1
+    const to = rows.findIndex((row) => row.id === id)
+    const ids = from >= 0 && to >= 0
+      ? rows.slice(Math.min(from, to), Math.max(from, to) + 1).filter(canReorderContent).map((row) => row.id)
+      : [id]
+    pickAnchor.current = id
+    setPicked((current) => { const next = new Set(current); for (const each of ids) { if (on) next.add(each); else next.delete(each) } return next })
+  }
   const searchTerms = contentQuery.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean)
   const searching = searchTerms.length > 0
   const matches = (item: { title: string; caption: string }): boolean => {
@@ -911,7 +923,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                                 onViewLibrary={() => void viewLibrary(item)}
                                 onShowInFolder={() => void showInFolder(item)}
                                 picked={picked.has(item.id)}
-                                onPick={(on) => setPicked((current) => { const next = new Set(current); if (on) next.add(item.id); else next.delete(item.id); return next })}
+                                onPick={(on, range) => pickRows(group.items, item.id, on, range)}
                                 // Fork: arrows on a picked row move the whole picked group together.
                                 onMove={(to) => void moveQueue(picked.has(item.id) && pickedIds.length > 1 ? pickedIds : [item.id], to)}
                                 moveDisabled={reorderDisabled}
@@ -1041,7 +1053,7 @@ function CreateForm({ busy, onCreate, onCancel, autoFocus, size = 'md', classNam
 function ContentRow({ item, nextUp, tiktokReviewNeeded, tiktokSelected, onReviewTikTok, reviewDisabled, editing, busy, onEdit, onChange, onSave, onReturnToQueue, onRefreshPost, onRemove, onCheckPosts, onViewLibrary, onShowInFolder, onEnhance, enhancementDisabled, enhanced, dragProvided, dragging, onDismissMetadataError, onDismissError, onRetry, retryDisabled, picked, onPick, onMove, moveDisabled }: {
   /** Fork: tick for bulk moves, and one-click up/down instead of dragging. */
   picked: boolean
-  onPick: (picked: boolean) => void
+  onPick: (picked: boolean, range: boolean) => void
   onMove: (to: QueueMove) => void
   moveDisabled: boolean
   item: AutomationContent
