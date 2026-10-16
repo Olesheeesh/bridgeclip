@@ -15,6 +15,7 @@ import { cancelQueuedJobsForQuit, onJobUpdate } from './job-manager'
 import { cancelZernioConnect } from './zernio/service'
 import { feedAutomationFromJob, isAutomationMedia, startAutomationScheduler } from './automations'
 import { sweepDeletingRuns } from './library-management'
+import { notifyJobFinished } from './job-notifications'
 import { registerAssistant, type AssistantRuntime } from './assistant/ipc'
 
 // Catch crashes anywhere in the main process so we get a log line instead
@@ -278,6 +279,8 @@ app.whenReady().then(() => {
   const stopAutomations = startAutomationScheduler()
   // Fork: jobs made for an automation add their finished clips to it.
   onJobUpdate((snapshot) => { void feedAutomationFromJob(snapshot) })
+  // Fork: tell the user when a long generation is done.
+  onJobUpdate((snapshot) => notifyJobFinished(snapshot, () => mainWindow))
   void sweepDeletingRuns()
   app.on('before-quit', stopAutomations)
   createWindow()
