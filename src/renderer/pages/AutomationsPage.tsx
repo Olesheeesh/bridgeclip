@@ -6,6 +6,7 @@ import { canReorderContent, reorderQueuedContent, hasAutomationWarnings, hasCont
 import { MAX_ENHANCEMENT_GUIDANCE, AUTOMATION_PLATFORMS, needsTikTokReview, nextAutomationContent, type Automation, type AutomationContent, type AutomationContentStatus, type AutomationUpdate, type AutomationSourceGroup } from '../../shared/automations'
 import { isPostableAccount, isValidProfileName } from '../../shared/zernio'
 import { AutomationTikTokReviewDialog } from '../components/AutomationTikTokReviewDialog'
+import { AutomationTikTokBatchReviewDialog } from '../components/AutomationTikTokBatchReviewDialog'
 import { ZernioStatusCheck } from '../components/ZernioStatusCheck'
 import { AutomationMetadataDialog } from '../components/AutomationMetadataDialog'
 import { PlatformIcon, platformName } from '../components/PlatformIcon'
@@ -110,6 +111,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
   const [sourceGuidance, setSourceGuidance] = useState<Record<string, string>>({})
   const activeSourceGroup = sourceGroups?.find((group) => group.key === sourceGroupKey)
   const [tiktokReview, setTiktokReview] = useState<AutomationContent | null>(null)
+  const [batchReview, setBatchReview] = useState<AutomationContent[] | null>(null)
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const closeConfirm = useCallback(() => setConfirm(null), [])
   const selected = automations.find((automation) => automation.id === selectedId) ?? null
@@ -693,6 +695,8 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
               <Panel padded={false}>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3.5 py-2">
                   <h2 className="mr-auto text-sm font-semibold text-ink" title="The first ready clip in queue order posts next. Drag queued clips to reorder them. Clips awaiting TikTok review are skipped.">Content bank</h2>
+                  {counts.tiktok_review > 0 && <Button size="sm" variant="primary" icon={<Check className="h-3 w-3" />} disabled={Boolean(busy) || dirty || Boolean(editing)} title="Review every clip waiting for TikTok on one screen and approve them together"
+                    onClick={() => setBatchReview(selected.content.filter((item) => item.status === 'queued' && !item.metadataDraft && needsTikTokReview(selected, item)))}>Review all for TikTok ({counts.tiktok_review})</Button>}
                   <Button size="sm" icon={<Plus className="h-3 w-3" />} loading={busy === 'upload'} onClick={() => void mutate('upload', () => getApi().automations.addContent(selected.id), 'Clips added to the bank.')} disabled={Boolean(busy)}>Add clips</Button>
                 </div>
                 {selected.content.some((item) => item.status === 'queued' && !hasEnhancedMetadata(item, selected.accounts.length ? selected.accounts.map((account) => account.platform) : ['youtube'])) && <div className="border-t border-white/[0.06] px-3.5 py-3 flex flex-wrap items-center gap-3">
@@ -791,6 +795,13 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
         onPrepared={() => setAutomations((current) => current.map((automation) => automation.id === selected.id
           ? { ...automation, content: automation.content.map((item) => item.id === tiktokReview.id ? { ...item, tiktokApproval: null } : item) } : automation))}
         onClose={() => { setTiktokReview(null); void mutate('refresh', () => getApi().automations.list()); }} onApproved={(result) => { setAutomations(result); setTiktokReview(null); setNotice('TikTok review saved. This clip is ready for the automation.'); }} />}
+      {selected && batchReview && <AutomationTikTokBatchReviewDialog key={selected.id} automation={selected} items={batchReview}
+        onClose={() => { setBatchReview(null); void mutate('refresh', () => getApi().automations.list()) }}
+        onApproved={(result, approved, failed) => {
+          if (result.length) setAutomations(result)
+          if (!failed) setBatchReview(null)
+          setNotice(`${approved} ${approved === 1 ? 'clip' : 'clips'} approved for TikTok${failed ? ` · ${failed} still need review` : ''}.`)
+        }} />}
       {confirm && <ConfirmDialog request={confirm} onClose={closeConfirm} />}
     </Page>
   )
