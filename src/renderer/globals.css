@@ -185,6 +185,9 @@
   body,
   #root {
     height: 100%;
+    /* Fork: the window itself never scrolls; only page areas do. 'hidden'
+       still lets scrollIntoView shift the whole app out of view. */
+    overflow: clip;
   }
 
   body {

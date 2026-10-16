@@ -407,7 +407,15 @@ function useActiveSection(ids: SectionId[]): [SectionId, (id: SectionId) => void
   const jump = (id: SectionId): void => {
     pinned.current = true
     setActive(id)
-    document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // Fork: scroll only the page area. scrollIntoView also scrolls every
+    // ancestor, so a section near the bottom (System check, About) pushed the
+    // whole window up, sidebar included, and left the app unusable.
+    const root = document.getElementById('page-scroll')
+    const section = document.getElementById(`settings-${id}`)
+    if (!root || !section) return
+    const margin = parseFloat(getComputedStyle(section).scrollMarginTop) || 0
+    const top = section.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop - margin
+    root.scrollTo({ top: Math.max(0, Math.min(top, root.scrollHeight - root.clientHeight)), behavior: 'smooth' })
   }
   return [active, jump]
 }
