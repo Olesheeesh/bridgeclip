@@ -166,6 +166,8 @@ export interface BridgeClipAPI {
     prepareTikTokReview: (id: string, contentId: string) => Promise<AutomationTikTokReview>
     approveTikTokReview: (id: string, contentId: string, update: AutomationTikTokReviewUpdate) => Promise<Automation[]>
     removeContent: (id: string, contentId: string) => Promise<Automation[]>
+    /** Fork: remove several picked clips at once. */
+    removeContents: (id: string, contentIds: string[]) => Promise<Automation[]>
   }
   settings: {
     load: () => Promise<ClipSettings>
@@ -371,7 +373,8 @@ const api: BridgeClipAPI = {
     updateContent: (id, contentId, update) => ipcRenderer.invoke('automations:updateContent', id, contentId, update),
     prepareTikTokReview: (id, contentId) => ipcRenderer.invoke('automations:prepareTikTokReview', id, contentId),
     approveTikTokReview: (id, contentId, update) => ipcRenderer.invoke('automations:approveTikTokReview', id, contentId, update),
-    removeContent: (id, contentId) => ipcRenderer.invoke('automations:removeContent', id, contentId)
+    removeContent: (id, contentId) => ipcRenderer.invoke('automations:removeContent', id, contentId),
+    removeContents: (id, contentIds) => ipcRenderer.invoke('automations:removeContents', id, contentIds)
   },
   settings: {
     load: () => ipcRenderer.invoke('settings:load'),

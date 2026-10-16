@@ -1016,6 +1016,24 @@ export function removeAutomationContent(id: unknown, contentId: unknown): Automa
   return listAutomations()
 }
 
+/** Fork: remove several clips from the bank at once (the queue's picked clips). Same rules as one. */
+export function removeAutomationContents(id: unknown, contentIds: unknown): Automation[] {
+  const { workspace, automation } = find(id)
+  if (!Array.isArray(contentIds) || !contentIds.length || contentIds.length > MAX_TOTAL_CONTENT || new Set(contentIds).size !== contentIds.length ||
+      !contentIds.every((value) => typeof value === 'string' && UUID.test(value))) throw new Error('Choose clips to remove.')
+  if (busy.has(automation.id)) throw new Error('Wait for the current operation to finish.')
+  const wanted = new Set(contentIds as string[])
+  const items = automation.content.filter((content) => wanted.has(content.id))
+  if (items.length !== wanted.size) throw new Error('Some selected clips are no longer in this bank. Refresh and try again.')
+  if (items.some((item) => item.status === 'posting')) throw new Error('Wait for the current post to finish.')
+  const previous = automation.content
+  automation.content = automation.content.filter((content) => !wanted.has(content.id))
+  try { save(workspace) } catch (error) { automation.content = previous; throw error }
+  forgetBankItems(workspace, automation.id, items)
+  for (const item of items) rmSync(join(bankPath(workspace, automation.id), item.fileName), { force: true })
+  return listAutomations()
+}
+
 async function completeBankSource(automation: Automation, source: AutomationSourceContext | null): Promise<AutomationSourceContext | null> {
   if (!source || source.description) return source
   const identity = source.url || source.videoId

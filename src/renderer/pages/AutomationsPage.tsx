@@ -405,6 +405,23 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
     })
   }
 
+  // Fork: remove every picked clip from the queue in one go, after a confirmation.
+  const removePicked = (): void => {
+    if (!selected || !pickedIds.length) return
+    const ids = [...pickedIds]
+    setConfirm({
+      title: `Remove ${ids.length} ${ids.length === 1 ? 'clip' : 'clips'} from the queue?`,
+      body: <>The selected {ids.length === 1 ? 'clip and its queue copy' : `${ids.length} clips and their queue copies`} will be removed from this content bank. The original files remain available in the Library.</>,
+      confirmLabel: `Remove ${ids.length}`,
+      tone: 'primary',
+      onConfirm: () => void (async () => {
+        if (typeof getApi().automations.removeContents !== 'function') { setError('Restart MerveilleClip to remove clips together.'); return }
+        const result = await mutate('remove', () => getApi().automations.removeContents(selected.id, ids), `${ids.length} ${ids.length === 1 ? 'clip' : 'clips'} removed from the queue.`)
+        if (result) setPicked(new Set())
+      })()
+    })
+  }
+
   const viewLibrary = async (item: AutomationContent): Promise<void> => {
     if (!selected || busy) return
     setBusy('library'); setError(null); setNotice(null)
@@ -557,6 +574,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                   <Button size="sm" variant="secondary" className="min-h-11" icon={<ArrowUp className="h-3.5 w-3.5" />} disabled={reorderDisabled} aria-label="Move selected clips up" onClick={() => void moveQueue(pickedIds, 'up')} />
                   <Button size="sm" variant="secondary" className="min-h-11" icon={<ArrowDown className="h-3.5 w-3.5" />} disabled={reorderDisabled} aria-label="Move selected clips down" onClick={() => void moveQueue(pickedIds, 'down')} />
                   <Button size="sm" variant="secondary" className="min-h-11" icon={<ChevronsDown className="h-3.5 w-3.5" />} disabled={reorderDisabled} title="Move the selected clips to the bottom of the queue" onClick={() => void moveQueue(pickedIds, 'bottom')}>To bottom</Button>
+                  <Button size="sm" variant="secondary" className="min-h-11 text-danger" icon={<Trash2 className="h-3.5 w-3.5" />} disabled={reorderDisabled} onClick={removePicked}>Remove {pickedIds.length}</Button>
                   <Button size="sm" variant="ghost" className="min-h-11" onClick={() => setPicked(new Set())}>Clear</Button>
                 </div>}
               </nav>
@@ -839,6 +857,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                   <Button size="sm" variant="secondary" icon={<ArrowUp className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'up')}>Up</Button>
                   <Button size="sm" variant="secondary" icon={<ArrowDown className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'down')}>Down</Button>
                   <Button size="sm" variant="secondary" icon={<ChevronsDown className="h-3 w-3" />} disabled={reorderDisabled} onClick={() => void moveQueue(pickedIds, 'bottom')}>To bottom</Button>
+                  <Button size="sm" variant="secondary" className="text-danger" icon={<Trash2 className="h-3 w-3" />} disabled={reorderDisabled} onClick={removePicked}>Remove {pickedIds.length}</Button>
                   <Button size="sm" variant="ghost" onClick={() => setPicked(new Set())}>Clear</Button>
                 </div>}
                 {bulkProgress && <Callout tone="info" className="mt-3" action={<Button size="sm" onClick={() => { stopBulk.current = true; setBulkProgress('Stopping after the current operation…') }}>Stop after batch</Button>}>{bulkProgress}</Callout>}
