@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Draggable, Droppable, type DraggableProvided, type DropResult } from '@hello-pangea/dnd'
 import { ArrowDown, ArrowUp, Check, ChevronsDown, ChevronsUp, FolderOpen, GripVertical, Info, ListOrdered, Pencil, Play, Plus, RefreshCw, Search, Sparkles, Trash2, Workflow, X } from 'lucide-react'
-import { canReorderContent, groupMovedBefore, reorderQueuedContent, hasAutomationWarnings, hasContentWarnings, hasEnhancedMetadata, movedQueueOrder, setQueuedOrder, type QueueMove } from '../../shared/automations'
+import { canReorderContent, queueRunway, groupMovedBefore, reorderQueuedContent, hasAutomationWarnings, hasContentWarnings, hasEnhancedMetadata, movedQueueOrder, setQueuedOrder, type QueueMove } from '../../shared/automations'
 import { MAX_ENHANCEMENT_GUIDANCE, AUTOMATION_PLATFORMS, needsTikTokReview, nextAutomationContent, type Automation, type AutomationContent, type AutomationContentStatus, type AutomationUpdate, type AutomationSourceGroup } from '../../shared/automations'
 import { isPostableAccount, isValidProfileName } from '../../shared/zernio'
 import { AutomationTikTokReviewDialog } from '../components/AutomationTikTokReviewDialog'
@@ -514,6 +514,9 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
     })
   }
   const nextSlot = selected ? nextRunLabel(selected.times, selected.timezone) : null
+  // Fork: one clip per daily time, so the queue's length in days and the date its last clip posts.
+  const runway = selected ? queueRunway(queued.length, selected.times, selected.timezone, Date.now()) : null
+  const runwayEnd = runway ? new Date(`${runway.lastDate}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }) : ''
   const savedReady = selected ? !missingSetup(selected) && !(selected.metadataMode === 'ai' && aiKeysMissing) : false
   const setupTodo = draft ? [
     !draft.profileId && 'choose a profile',
@@ -887,6 +890,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                           {group.label}<span className="tabular rounded-full bg-hi/[0.06] px-2 py-0.5 text-2xs">{group.items.length}</span></h3>
                         {group.label === 'Queued' && <span role="status" aria-label="Next posting slot" className="ml-auto text-right text-2xs text-ink-muted">
                           {!nextSlot ? 'No times scheduled' : !selected.enabled ? 'Paused' : <>Next slot <span className="text-ink">{nextSlot}</span><span className="text-ink-subtle"> · {selected.timezone.replace(/_/g, ' ')}</span></>}
+                          {runway && <span className="block">Lasts <span className="tabular text-ink">{runway.days} {runway.days === 1 ? 'day' : 'days'}</span> at {selected.times.length} a day, until <span className="text-ink">{runwayEnd}</span></span>}
                         </span>}
                       </div>
                       {group.label === 'Held clips' && <p className="px-3.5 py-2 text-2xs text-ink-subtle">Warnings acknowledged. These clips stay out of the queue until you review and return them.</p>}

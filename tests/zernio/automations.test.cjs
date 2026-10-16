@@ -1092,3 +1092,16 @@ test('submitted and linked clips can be removed as history, never count toward t
     assert.equal(loadMain(source, mocks).automations.listAutomations()[0].content.length, 1000, 'the pruned bank reloads')
   } finally { cleanup() }
 })
+
+test('queue runway counts the days a queue lasts from the next slot', () => {
+  const { queueRunway } = loadMain("export { queueRunway } from './src/shared/automations'", { electron: {} })
+  const morning = Date.parse('2026-10-16T08:00:00Z')
+  assert.deepEqual(queueRunway(3, ['09:00', '15:00', '21:00'], 'UTC', morning), { days: 1, lastDate: '2026-10-16' })
+  assert.deepEqual(queueRunway(4, ['09:00', '15:00', '21:00'], 'UTC', morning), { days: 2, lastDate: '2026-10-17' })
+  assert.deepEqual(queueRunway(47, ['09:00', '21:00'], 'UTC', morning), { days: 24, lastDate: '2026-11-08' })
+  const night = Date.parse('2026-10-16T22:00:00Z')
+  assert.deepEqual(queueRunway(3, ['09:00', '15:00', '21:00'], 'UTC', night), { days: 1, lastDate: '2026-10-17' })
+  assert.deepEqual(queueRunway(5, ['09:00'], 'America/New_York', Date.parse('2026-10-31T23:00:00Z')), { days: 5, lastDate: '2026-11-05' })
+  assert.equal(queueRunway(0, ['09:00'], 'UTC', morning), null)
+  assert.equal(queueRunway(5, [], 'UTC', morning), null)
+})

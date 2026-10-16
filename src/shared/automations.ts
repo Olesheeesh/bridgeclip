@@ -336,3 +336,19 @@ export function dueSlots(times: readonly string[], timezone: string, now: number
   }
   return slots
 }
+
+/** Fork: how long a queue of `count` clips lasts at one clip per daily slot, counting from `now`. */
+export function queueRunway(count: number, times: readonly string[], timezone: string, now: number): { days: number; lastDate: string } | null {
+  const sorted = [...new Set(times)].sort()
+  if (count <= 0 || sorted.length === 0) return null
+  let parts: Record<string, string>
+  try {
+    parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(now).map((part) => [part.type, part.value]))
+  } catch { return null }
+  const leftToday = sorted.filter((time) => time > `${parts.hour}:${parts.minute}`).length
+  const offset = count <= leftToday ? 0 : Math.ceil((count - leftToday) / sorted.length)
+  const last = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) + offset))
+  return { days: offset + (leftToday > 0 ? 1 : 0), lastDate: last.toISOString().slice(0, 10) }
+}
