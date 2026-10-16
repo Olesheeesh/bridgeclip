@@ -863,9 +863,13 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                 {bulkProgress && <Callout tone="info" className="mt-3" action={<Button size="sm" onClick={() => { stopBulk.current = true; setBulkProgress('Stopping after the current operation…') }}>Stop after batch</Button>}>{bulkProgress}</Callout>}
                 <DragDropContext key={selected.id} onBeforeCapture={() => { contentInteraction.current = true; refreshVersion.current++ }} onDragEnd={(result) => void moveContent(result)}>
                   {contentGroups.filter((group) => !['Needs attention', 'Held clips'].includes(group.label) || group.items.length > 0).map((group) => (
-                    <section key={group.label} id={`bank-${group.label.toLowerCase().replace(/\s+/g, '-')}`} aria-label={group.label} className="border-t border-hi/[0.06]">
-                      <div className="flex flex-wrap items-center justify-between gap-2 bg-hi/[0.02] px-3.5 py-2.5">
-                        <h3 className="flex items-center gap-2 text-xs font-semibold text-ink-muted">
+                    <section key={group.label} id={`bank-${group.label.toLowerCase().replace(/\s+/g, '-')}`} aria-label={group.label}
+                      className={cn('border-t border-hi/[0.06]', group.label === 'Submitted' && 'mt-4 border-t-0 bg-hi/[0.025]')}>
+                      {/* Fork: Submitted reads as history: its own tinted band, a check mark and a green rule, apart from the live queue. */}
+                      <div className={cn('flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5',
+                        group.label === 'Submitted' ? 'border-y-2 border-success/40 bg-success/[0.08]' : group.label === 'Queued' ? 'bg-accent/[0.06]' : 'bg-hi/[0.02]')}>
+                        <h3 className={cn('flex items-center gap-2 text-xs font-semibold', group.label === 'Submitted' ? 'text-success' : group.label === 'Queued' ? 'text-ink' : 'text-ink-muted')}>
+                          {group.label === 'Submitted' && <Check aria-hidden className="h-3.5 w-3.5" strokeWidth={3} />}
                           {group.label === 'Queued' && queueIds.length > 0 && <Checkbox checked={pickedIds.length === queueIds.length} indeterminate={pickedIds.length > 0 && pickedIds.length < queueIds.length}
                             onChange={() => setPicked(pickedIds.length === queueIds.length ? new Set() : new Set(queueIds))} label="Select all queued clips" />}
                           {group.label}<span className="tabular rounded-full bg-hi/[0.06] px-2 py-0.5 text-2xs">{group.items.length}</span></h3>
@@ -876,7 +880,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                       {group.label === 'Held clips' && <p className="px-3.5 py-2 text-2xs text-ink-subtle">Warnings acknowledged. These clips stay out of the queue until you review and return them.</p>}
                       {group.items.length === 0 && <p className="px-3.5 py-4 text-xs text-ink-subtle">{group.empty}</p>}
                       <Droppable droppableId={group.label} isDropDisabled={group.label !== 'Queued' || reorderDisabled || filtering}>
-                        {(listProvided, listSnapshot) => <ul ref={listProvided.innerRef} {...listProvided.droppableProps} className={cn('divide-y divide-hi/[0.06] transition-colors', listSnapshot.isDraggingOver && 'bg-accent/[0.035]')}>
+                        {(listProvided, listSnapshot) => <ul ref={listProvided.innerRef} {...listProvided.droppableProps} className={cn('divide-y divide-hi/[0.06] transition-colors', group.label === 'Submitted' && 'opacity-75', listSnapshot.isDraggingOver && 'bg-accent/[0.035]')}>
                           {group.items.map((item, index) => (
                             <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={reorderDisabled || filtering || !canReorderContent(item)}>
                               {(provided, snapshot) => <ContentRow

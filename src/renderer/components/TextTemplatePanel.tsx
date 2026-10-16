@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Check } from 'lucide-react'
 import { canReorderContent, type Automation } from '../../shared/automations'
 import { applyTextTemplate, DEFAULT_TEXT_TEMPLATE, EMOJI_PLACEMENTS, isTextTemplate, MAX_TEMPLATE_EMOJIS, visibleLength, type EmojiPlacement, type TextTemplate } from '../../shared/fork-text-template'
 import { getApi } from '../lib/ipc'
@@ -31,6 +32,8 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, disabledRea
   const [busy, setBusy] = useState<string | null>(null)
   // Fork: opt-in rewrite of clips already approved for TikTok (they are reviewed again).
   const [includeApproved, setIncludeApproved] = useState(false)
+  // Fork: the outcome of the last Apply, shown in green right under the buttons.
+  const [applied, setApplied] = useState<string | null>(null)
   useEffect(() => { setDraft(automation.textTemplate ?? DEFAULT_TEXT_TEMPLATE) }, [automation.id, automation.textTemplate])
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved ?? DEFAULT_TEXT_TEMPLATE) || !saved
@@ -46,12 +49,13 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, disabledRea
     setBusy(action)
     try { await request() } catch (cause) { onNotice(errorMessage(cause, 'Could not update the text template.'), 'error') } finally { setBusy(null) }
   }
-  const save = (): Promise<void> => run('save', async () => { onUpdated(await getApi().automations.setTextTemplate(automation.id, draft)); onNotice('Text template saved.') })
+  const save = (): Promise<void> => run('save', async () => { onUpdated(await getApi().automations.setTextTemplate(automation.id, draft)); setApplied('Text template saved.') })
   const apply = (ids: string[] | null): Promise<void> => run(ids ? 'apply-picked' : 'apply-all', async () => {
     if (dirty) onUpdated(await getApi().automations.setTextTemplate(automation.id, draft))
+    setApplied(null)
     const result = await getApi().automations.applyTextTemplate(automation.id, ids, includeApproved)
     onUpdated(result.automations)
-    onNotice(`Template applied to ${result.applied} ${result.applied === 1 ? 'clip' : 'clips'}` +
+    setApplied(`Template applied to ${result.applied} ${result.applied === 1 ? 'clip' : 'clips'}` +
       `${result.reapprove ? ` · ${result.reapprove} need TikTok review again: use “Review all for TikTok”` : ''}` +
       `${result.skipped ? ` · ${result.skipped} left as they are (submitted, draft${includeApproved ? '' : ', or approved for TikTok: tick “Also update clips approved for TikTok”'})` : ''}.`)
   })
@@ -150,6 +154,7 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, disabledRea
         {!valid && <span className="text-2xs text-warning">Max characters must be 0 or at least the minimum.</span>}
         <span className="text-2xs text-ink-subtle">Submitted clips never change. With AI captions on, AI drafts replace these captions.</span>
       </div>
+      {applied && <p role="status" className="flex items-start gap-2 rounded-lg bg-success/[0.1] px-3 py-2 text-sm text-success"><Check aria-hidden className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={3} />{applied}</p>}
     </fieldset>
   )
 }
