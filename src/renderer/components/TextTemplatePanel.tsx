@@ -9,7 +9,7 @@ import { Field, TextArea, TextInput } from './ui/Field'
 import { Segmented } from './ui/Segmented'
 import { Switch } from './ui/Switch'
 
-const PLACEMENT_LABELS: Record<EmojiPlacement, string> = { none: 'No emoji', start: 'At the start', end: 'At the end' }
+const PLACEMENT_LABELS: Record<EmojiPlacement, string> = { none: 'No emoji', start: 'At the start', end: 'At the end', ai: 'AI picks' }
 const SUGGESTED_EMOJIS = ['💀', '😭', '🔥', '🤯', '💰', '🎰', '😂', '👀', '🗿', '😳']
 
 /**
@@ -33,7 +33,7 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, onUpdated, 
   const valid = isTextTemplate(draft)
   const set = (patch: Partial<TextTemplate>): void => setDraft((current) => ({ ...current, ...patch }))
   const queued = automation.content.filter(canReorderContent)
-  const preview = useMemo(() => queued.slice(0, 3).map((item, index) => ({ id: item.id, ...applyTextTemplate(draft, item.templateBase ?? item.title, index + 1) })), [queued, draft])
+  const preview = useMemo(() => queued.slice(0, 3).map((item, index) => ({ id: item.id, ...applyTextTemplate(draft, item.templateBase ?? item.title, index + 1, item.aiEmojiFor === (item.templateBase ?? item.title) ? item.aiEmoji : undefined) })), [queued, draft])
 
   const run = async (action: string, request: () => Promise<void>): Promise<void> => {
     setBusy(action)
@@ -84,7 +84,11 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, onUpdated, 
                 <Button size="sm" type="submit" disabled={!emojiInput.trim()}>Add</Button>
               </form>
             </div>
-            <p className="text-2xs text-ink-subtle">Each clip always gets the same emoji from your list, so re-applying never stacks them.</p>
+            <p className="text-2xs text-ink-subtle">
+              {draft.emojiPlacement === 'ai'
+                ? `AI adds one emoji at the end only where it fits the way TikTok uses it (💀, 🥀…), and leaves the rest without. ${draft.emojis.length ? 'It picks only from your list.' : 'With an empty list it may use any emoji.'} Each clip is judged once, when you apply.`
+                : 'Each clip always gets the same emoji from your list, so re-applying never stacks them.'}
+            </p>
           </div>
         </div>
         <div className="space-y-3">

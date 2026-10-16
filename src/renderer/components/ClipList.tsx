@@ -395,6 +395,13 @@ function GeneratedClipList({ output, outputDir: runDirectory, leading, onNewClip
               filtering ? `${clips.length} of ${output.clips.length} clips` : `${clips.length} clips`
             )}
           </span>
+          {/* Fork: one click to the batch size automations accept, in the order shown (Best first or Timeline). */}
+          {visibleClips.length > MAX_BANK_BATCH && selected.size !== MAX_BANK_BATCH && (
+            <Button variant="ghost" size="sm" disabled={deleting} title={`Select the first ${MAX_BANK_BATCH} clips in the order shown`}
+              onClick={() => setSelected(new Set(visibleClips.slice(0, MAX_BANK_BATCH).map((clip) => clip.clip_index)))}>
+              Select {MAX_BANK_BATCH}
+            </Button>
+          )}
           {notice && (
             <span className="inline-flex min-w-0 items-center gap-1.5 truncate rounded-full bg-success/[0.1] px-2.5 py-1 text-xs text-success shadow-[inset_0_0_0_1px_rgb(var(--success)/0.25)] animate-fade-in">
               <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />

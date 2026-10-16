@@ -5,8 +5,9 @@
  */
 import { isStackStyle, isTitleStyle, type StackStyle, type TitleStyle } from './fork-layout'
 
-export type EmojiPlacement = 'none' | 'start' | 'end'
-export const EMOJI_PLACEMENTS: readonly EmojiPlacement[] = ['none', 'start', 'end']
+/** 'ai': a model decides per clip whether one emoji fits, and it goes at the end. */
+export type EmojiPlacement = 'none' | 'start' | 'end' | 'ai'
+export const EMOJI_PLACEMENTS: readonly EmojiPlacement[] = ['none', 'start', 'end', 'ai']
 
 export interface TextTemplate {
   /** Posted title. Tokens: {title} the clip's original title, {n} its queue position. */
@@ -86,9 +87,10 @@ export interface TemplateResult {
   note: string | null
 }
 
-export function applyTextTemplate(template: TextTemplate, base: string, n: number): TemplateResult {
+/** `aiEmoji` is the model's choice for this clip in 'ai' mode ('' or undefined = none). */
+export function applyTextTemplate(template: TextTemplate, base: string, n: number, aiEmoji?: string): TemplateResult {
   const clean = base.replace(/\s+/g, ' ').trim()
-  const emoji = template.emojiPlacement === 'none' ? '' : pickEmoji(template.emojis, clean)
+  const emoji = template.emojiPlacement === 'none' ? '' : template.emojiPlacement === 'ai' ? (aiEmoji ?? '') : pickEmoji(template.emojis, clean)
   const fill = (pattern: string, title: string): string => pattern.replaceAll('{title}', title).replaceAll('{emoji}', emoji).replaceAll('{n}', String(n))
   const decorate = (core: string): string => {
     const text = fill(template.titleTemplate, core).replace(/\s+/g, ' ').trim()

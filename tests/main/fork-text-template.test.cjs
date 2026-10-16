@@ -36,3 +36,12 @@ test('isTextTemplate rejects broken limits and oversized lists', () => {
     assert.equal(isTextTemplate({ ...DEFAULT_TEXT_TEMPLATE, ...bad }), false, JSON.stringify(bad))
   }
 })
+
+test("'AI picks' puts the model's emoji at the end, and none when it chose none", () => {
+  const { applyTextTemplate, DEFAULT_TEXT_TEMPLATE, isTextTemplate } = tpl()
+  const template = { ...DEFAULT_TEXT_TEMPLATE, emojis: ['💀', '🥀'], emojiPlacement: 'ai' }
+  assert.equal(isTextTemplate(template), true)
+  assert.equal(applyTextTemplate(template, 'He Lost The Whole Inventory', 1, '🥀').title, 'He Lost The Whole Inventory 🥀')
+  assert.equal(applyTextTemplate(template, 'Patch Notes Explained', 1, '').title, 'Patch Notes Explained')
+  assert.equal(applyTextTemplate(template, 'Not Judged Yet', 1).title, 'Not Judged Yet')
+})

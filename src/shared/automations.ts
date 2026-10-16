@@ -106,6 +106,9 @@ export interface AutomationContent {
   tiktokDraftCaption?: string | null
   /** Fork: the clip's title before a text template first changed it ({title} in templates). */
   templateBase?: string
+  /** Fork: the AI emoji choice ('' = none) and the title it was made for, so re-applying never asks again. */
+  aiEmoji?: string
+  aiEmojiFor?: string
   status: AutomationContentStatus
   addedAt: string
   postedAt: string | null

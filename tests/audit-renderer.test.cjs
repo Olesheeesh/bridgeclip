@@ -28,7 +28,7 @@ const bundled = buildSync({
   platform: 'node',
   format: 'cjs',
   packages: 'external',
-  loader: { '.svg': 'dataurl', '.css': 'empty' },
+  loader: { '.svg': 'dataurl', '.png': 'dataurl', '.css': 'empty' },
   define: { __APP_VERSION__: JSON.stringify(require('../package.json').version) },
   jsx: 'automatic',
   write: false
@@ -90,7 +90,7 @@ function attributes(html, name) {
 const FORBIDDEN_TAGS = new Set(['script', 'iframe', 'object', 'embed', 'a', 'form', 'base', 'meta', 'style'])
 const URL_ATTRS = new Set(['src', 'srcset', 'poster', 'href', 'action', 'formaction', 'data', 'xlink:href'])
 /** Media may come from the main process's local-file protocol, the YouTube thumbnail host, or bundled brand SVGs. */
-const ALLOWED_URL = /^(local-file:\/\/media\/[^/?#:\\]*$|https:\/\/i\.ytimg\.com\/|data:image\/svg\+xml)/
+const ALLOWED_URL = /^(local-file:\/\/media\/[^/?#:\\]*$|https:\/\/i\.ytimg\.com\/|data:image\/svg\+xml|data:image\/png;base64,)/
 
 /** Hostile strings must end up as text: no injected elements, handlers or URLs anywhere in the markup. */
 function assertEscaped(html) {

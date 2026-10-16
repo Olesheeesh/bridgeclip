@@ -22,6 +22,7 @@ import { generateAutomationMetadata, transcribeAutomationClip, researchAutomatio
 import { completeSourceContext, findLibraryClipForClip, parseSourceContext, recoverSourceContext, sourceFromOutput, sourceResearchKey } from './automation-source'
 import { canReorderContent, DEFAULT_SOUND_SETTINGS, guessSoundKind, hasContentWarnings, reorderQueuedContent, setQueuedOrder, SOUND_INTENSITIES, SOUND_KINDS, timelineQueueOrder, type AutomationSound, type AutomationSoundSettings } from '../shared/automations'
 import { applyTextTemplate, isTextTemplate, type TextTemplate } from '../shared/fork-text-template'
+import { pickTrendEmojis } from './ai-emoji'
 import type { JobOutput } from '../shared/job-output'
 import type { JobSnapshot } from '../shared/jobs'
 
@@ -161,7 +162,9 @@ const OPTIONAL_CONTENT_FIELDS: { [K in keyof AutomationContent]?: (value: Automa
   sourceClipPath: (value) => value === undefined || (typeof value === 'string' && value.length <= 8192 && !value.includes('\0')),
   tiktokApproval: (_value, item) => validTikTokApproval(item),
   tiktokDraftCaption: (value) => value == null || (typeof value === 'string' && !value.includes('\0') && !checkCaption('tiktok', value).error),
-  templateBase: (value) => value === undefined || (typeof value === 'string' && value.length <= 500 && !value.includes('\0'))
+  templateBase: (value) => value === undefined || (typeof value === 'string' && value.length <= 500 && !value.includes('\0')),
+  aiEmoji: (value) => value === undefined || (typeof value === 'string' && value.length <= 16),
+  aiEmojiFor: (value) => value === undefined || (typeof value === 'string' && value.length <= 500 && !value.includes('\0'))
 }
 
 /** Remove invalid optional fields in place. Returns true when the store needs rewriting. */
@@ -544,6 +547,7 @@ export async function addAutomationContent(id: unknown, paths: string[], titles?
   const copiedFiles: string[] = []
   const pendingItems: AutomationContent[] = []
   let committed = false
+  let aiEmojiFollowUp: AiEmojiFollowUp | null = null
   try {
     mkdirSync(directory, { recursive: true, mode: 0o700 })
     for (const [index, path] of paths.entries()) {
@@ -583,6 +587,8 @@ export async function addAutomationContent(id: unknown, paths: string[], titles?
     if (automation.textTemplate?.autoApply) {
       const queued = automation.content.filter(canReorderContent).length
       pendingItems.forEach((item, index) => templateItem(automation.textTemplate!, item, queued + index + 1))
+      // Fork: in 'AI picks' mode the emoji follow a moment later, once the model has judged the new clips.
+      if (automation.textTemplate.emojiPlacement === 'ai') aiEmojiFollowUp = { automationId: automation.id, contentIds: new Set(pendingItems.map((item) => item.id)) }
     }
     const previousContent = automation.content
     const pruned = pruneHistory([...previousContent, ...pendingItems])
@@ -595,6 +601,7 @@ export async function addAutomationContent(id: unknown, paths: string[], titles?
     if (!committed) for (const file of copiedFiles) await unlink(file).catch(() => {})
     release(automation.id)
   }
+  if (aiEmojiFollowUp) void followUpAiEmojis(aiEmojiFollowUp)
   return listAutomations()
 }
 
@@ -790,10 +797,58 @@ export async function feedAutomationFromJob(snapshot: JobSnapshot): Promise<void
 /** Fork: title and caption from the automation's text template; {title} stays the clip's original title. */
 function templateItem(template: TextTemplate, item: AutomationContent, n: number): void {
   const base = item.templateBase ?? item.title
-  const result = applyTextTemplate(template, base, n)
+  const result = applyTextTemplate(template, base, n, item.aiEmojiFor === base ? item.aiEmoji : undefined)
   item.templateBase = base
   item.title = result.title || base
   item.caption = result.caption || item.title
+}
+
+interface AiEmojiFollowUp { automationId: string; contentIds: Set<string> }
+
+/**
+ * Fork: ask the model about queued clips it has not judged for their current
+ * title yet, and remember each answer ('' = no emoji) on the clip. Returns how
+ * many clips were judged. Throws a user-facing message if OpenRouter fails.
+ */
+async function decideAiEmojis(automationId: string, include: (item: AutomationContent) => boolean): Promise<number> {
+  const { automation } = find(automationId)
+  const template = automation.textTemplate
+  if (!template || template.emojiPlacement !== 'ai') return 0
+  const pending = automation.content.filter((item) => canReorderContent(item) && !item.metadataDraft && !item.tiktokApproval &&
+    include(item) && item.aiEmojiFor !== (item.templateBase ?? item.title))
+  if (!pending.length) return 0
+  const picks = await pickTrendEmojis(pending.map((item) => ({ id: item.id, title: item.templateBase ?? item.title, transcript: item.transcript })), template.emojis)
+  const { workspace, automation: current } = find(automationId)
+  let judged = 0
+  for (const item of current.content) {
+    const emoji = picks.get(item.id)
+    if (emoji === undefined) continue
+    item.aiEmoji = emoji
+    item.aiEmojiFor = item.templateBase ?? item.title
+    judged++
+  }
+  if (judged) save(workspace)
+  return judged
+}
+
+/** Fork: clips auto-templated on arrival get their AI emoji once the model has answered. */
+async function followUpAiEmojis(followUp: AiEmojiFollowUp): Promise<void> {
+  try {
+    await decideAiEmojis(followUp.automationId, (item) => followUp.contentIds.has(item.id))
+    const { workspace, automation } = find(followUp.automationId)
+    const template = automation.textTemplate
+    if (!template?.autoApply || template.emojiPlacement !== 'ai' || busy.has(automation.id)) return
+    let n = 0
+    for (const item of automation.content) {
+      const queued = canReorderContent(item)
+      if (queued) n++
+      if (!queued || !followUp.contentIds.has(item.id) || item.metadataDraft || item.tiktokApproval) continue
+      templateItem(template, item, n)
+    }
+    save(workspace)
+  } catch (error) {
+    logger.warn('automation.ai_emoji.failed', { automationId: followUp.automationId, message: error instanceof Error ? error.message.slice(0, 200) : 'unknown' })
+  }
 }
 
 /** Fork: save (or clear with null) the automation's text template. */
@@ -812,13 +867,20 @@ export function setAutomationTextTemplate(id: unknown, raw: unknown): Automation
  * Clips already submitted, posting, holding a draft, or approved for TikTok
  * (their approved caption is what TikTok gets) are left as they are.
  */
-export function applyAutomationTextTemplate(id: unknown, contentIds: unknown): { automations: Automation[]; applied: number; skipped: number } {
+export async function applyAutomationTextTemplate(id: unknown, contentIds: unknown): Promise<{ automations: Automation[]; applied: number; skipped: number }> {
+  const first = find(id)
+  if (busy.has(first.automation.id)) throw new Error('Wait for the current operation to finish.')
+  if (!first.automation.textTemplate) throw new Error('Save a text template first.')
+  if (contentIds !== null && (!Array.isArray(contentIds) || contentIds.length > MAX_TOTAL_CONTENT || !contentIds.every((value) => typeof value === 'string' && UUID.test(value)))) throw new Error('Choose queued clips.')
+  const wanted = contentIds === null ? null : new Set(contentIds as string[])
+  // Fork: 'AI picks' asks the model once for the clips it has not judged yet.
+  if (first.automation.textTemplate.emojiPlacement === 'ai') {
+    await decideAiEmojis(first.automation.id, (item) => !wanted || wanted.has(item.id))
+  }
   const { workspace, automation } = find(id)
   if (busy.has(automation.id)) throw new Error('Wait for the current operation to finish.')
   const template = automation.textTemplate
   if (!template) throw new Error('Save a text template first.')
-  if (contentIds !== null && (!Array.isArray(contentIds) || contentIds.length > MAX_TOTAL_CONTENT || !contentIds.every((value) => typeof value === 'string' && UUID.test(value)))) throw new Error('Choose queued clips.')
-  const wanted = contentIds === null ? null : new Set(contentIds as string[])
   const previous = automation.content.map((item) => ({ ...item }))
   let applied = 0
   let skipped = 0

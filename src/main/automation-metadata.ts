@@ -33,11 +33,11 @@ function youtubeTagsLength(tags: string[]): number {
   return tags.reduce((length, tag, index) => length + [...tag].length + (/\s/.test(tag) ? 2 : 0) + (index > 0 ? 1 : 0), 0)
 }
 
-function endpoint(name: 'BRIDGECLIP_E2E_TRANSCRIPTION_URL' | 'BRIDGECLIP_E2E_OPENROUTER_URL', production: string): string {
+export function endpoint(name: 'BRIDGECLIP_E2E_TRANSCRIPTION_URL' | 'BRIDGECLIP_E2E_OPENROUTER_URL', production: string): string {
   return app.isPackaged ? production : process.env[name] || production
 }
 
-async function providerResponse(response: Response, operation: 'transcription' | 'metadata', maxBytes = 100_000): Promise<Record<string, unknown>> {
+export async function providerResponse(response: Response, operation: 'transcription' | 'metadata', maxBytes = 100_000): Promise<Record<string, unknown>> {
   if (!response.ok) {
     const status = response.status
     if (status === 401 || status === 403) throw new Error('OpenRouter rejected the API key. Check it in Settings.')
