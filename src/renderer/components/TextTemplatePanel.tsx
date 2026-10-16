@@ -16,10 +16,12 @@ const SUGGESTED_EMOJIS = ['💀', '😭', '🔥', '🤯', '💰', '🎰', '😂'
  * Fork: per-automation text rules (title, caption, emoji, length) and the render
  * look used for jobs made for this automation. Applies to queued clips only.
  */
-export function TextTemplatePanel({ automation, pickedIds, disabled, onUpdated, onNotice }: {
+export function TextTemplatePanel({ automation, pickedIds, disabled, disabledReason, onUpdated, onNotice }: {
   automation: Automation
   pickedIds: string[]
   disabled: boolean
+  /** Fork: why the panel is locked, shown above it so a greyed-out form is never a mystery. */
+  disabledReason?: string | null
   onUpdated: (automations: Automation[]) => void
   onNotice: (message: string, tone?: 'error') => void
 }): React.JSX.Element {
@@ -54,6 +56,7 @@ export function TextTemplatePanel({ automation, pickedIds, disabled, onUpdated, 
 
   return (
     <fieldset disabled={disabled || Boolean(busy)} className="min-w-0 space-y-5 p-3.5">
+      {disabled && disabledReason && <p role="status" className="rounded-lg bg-warning/[0.1] px-3 py-2 text-xs text-warning">{disabledReason}</p>}
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="space-y-3">
           <p className="eyebrow">Title</p>

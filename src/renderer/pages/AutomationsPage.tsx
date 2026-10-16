@@ -775,6 +775,7 @@ export function AutomationsPage({ onNavigate, onViewLibrary }: { onNavigate: (pa
                     <span className="text-2xs font-normal text-ink-subtle">{selected.textTemplate ? 'Title, caption and emoji rules saved' : 'Title, caption, emoji and length rules'}</span>
                   </summary>
                   <TextTemplatePanel key={selected.id} automation={selected} pickedIds={pickedIds} disabled={Boolean(busy) || dirty || Boolean(editing)}
+                    disabledReason={editing ? 'A clip’s title and caption are open for editing below. Save or cancel that edit to change the template.' : dirty ? 'Save or discard the automation settings above to change the template.' : null}
                     onUpdated={setAutomations} onNotice={(message, tone) => tone === 'error' ? setError(message) : setNotice(message)} />
                 </details>
               </Panel>
